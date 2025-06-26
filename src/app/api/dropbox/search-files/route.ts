@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({}),
+        body: null,
       })
 
       if (!accountResponse.ok) {
