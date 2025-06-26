@@ -1,0 +1,47 @@
+{
+  "name": "canvas-coach",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Canvas LMS Coach - Professionele ondersteuning voor Canvas gebruikers",
+  "keywords": [
+    "nextjs",
+    "canvas",
+    "lms",
+    "onderwijs",
+    "coach",
+    "gemini",
+    "ai",
+    "typescript"
+  ],
+  "author": "Canvas Coach Team",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "docx": "^9.5.0",
+    "mammoth": "^1.9.1",
+    "next": "15.3.3",
+    "pdf-parse": "^1.1.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/pdf-parse": "^1.1.5",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "15.3.3",
+    "postcss": "^8.5.4",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.6.3"
+  }
+}
