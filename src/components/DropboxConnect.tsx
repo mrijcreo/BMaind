@@ -34,6 +34,8 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
   const [error, setError] = useState<string>('')
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null)
   const [configurationError, setConfigurationError] = useState<any>(null)
+  const [retryCount, setRetryCount] = useState(0)
+  const [isAutoRetrying, setIsAutoRetrying] = useState(false)
   
   // Diagnostic states
   const [showDiagnostics, setShowDiagnostics] = useState(false)
@@ -347,11 +349,12 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
     await new Promise(resolve => setTimeout(resolve, 500))
   }
 
-  // Dropbox OAuth flow
+  // Dropbox OAuth flow with improved error handling
   const connectToDropbox = () => {
     setIsConnecting(true)
     setError('')
     setConfigurationError(null)
+    setIsAutoRetrying(false)
 
     // Dropbox OAuth URL
     const clientId = process.env.NEXT_PUBLIC_DROPBOX_APP_KEY
@@ -364,12 +367,18 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
     const redirectUri = `${window.location.origin}/dropbox-callback`
     const authUrl = `https://www.dropbox.com/oauth2/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=files.metadata.read files.content.read`
 
-    // Open popup for OAuth
+    // Open popup for OAuth with better window settings
     const popup = window.open(
       authUrl,
       'dropbox-auth',
-      'width=600,height=700,scrollbars=yes,resizable=yes'
+      'width=600,height=700,scrollbars=yes,resizable=yes,location=yes,status=yes'
     )
+
+    if (!popup) {
+      setError('Popup geblokkeerd door browser. Sta popups toe voor deze website en probeer opnieuw.')
+      setIsConnecting(false)
+      return
+    }
 
     // Listen for popup messages
     const messageListener = (event: MessageEvent) => {
@@ -380,38 +389,85 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
         handleAuthSuccess(accessToken)
         popup?.close()
         window.removeEventListener('message', messageListener)
+        setRetryCount(0) // Reset retry count on success
       } else if (event.data.type === 'DROPBOX_AUTH_ERROR') {
         const errorMessage = event.data.userMessage || event.data.error || 'Onbekende fout'
+        const retryDelay = event.data.retryDelay || 2000
         
         // Handle specific error types
         if (event.data.errorType === 'expired_code') {
-          setError('⚠️ Autorisatie code verlopen. Dit gebeurt soms als het proces te lang duurt. Probeer opnieuw.')
+          setError(`⚠️ Autorisatie code verlopen (poging ${retryCount + 1}). Dit gebeurt als het proces te lang duurt. ${retryCount < 2 ? 'Automatisch opnieuw proberen...' : 'Probeer handmatig opnieuw.'}`)
+          
+          // Auto-retry up to 3 times for expired codes
+          if (retryCount < 2) {
+            setIsAutoRetrying(true)
+            setTimeout(() => {
+              setRetryCount(prev => prev + 1)
+              popup?.close()
+              window.removeEventListener('message', messageListener)
+              connectToDropbox() // Retry automatically
+            }, retryDelay)
+            return
+          }
         } else {
           setError('Dropbox autorisatie mislukt: ' + errorMessage)
         }
         
         setIsConnecting(false)
+        setIsAutoRetrying(false)
         popup?.close()
         window.removeEventListener('message', messageListener)
       } else if (event.data.type === 'DROPBOX_AUTH_RETRY') {
         // User clicked retry in the callback window
         popup?.close()
         window.removeEventListener('message', messageListener)
-        // Automatically retry the connection
-        setTimeout(() => connectToDropbox(), 1000)
+        // Automatically retry the connection with a small delay
+        setTimeout(() => {
+          setRetryCount(prev => prev + 1)
+          connectToDropbox()
+        }, 1000)
       }
     }
 
     window.addEventListener('message', messageListener)
 
-    // Handle popup closed manually
-    const checkClosed = setInterval(() => {
-      if (popup?.closed) {
-        clearInterval(checkClosed)
+    // Handle popup closed manually with improved detection
+    let checkClosedInterval: NodeJS.Timeout
+    const checkClosed = () => {
+      try {
+        if (popup?.closed) {
+          clearInterval(checkClosedInterval)
+          setIsConnecting(false)
+          setIsAutoRetrying(false)
+          window.removeEventListener('message', messageListener)
+          
+          // Only show error if not auto-retrying
+          if (!isAutoRetrying && retryCount === 0) {
+            setError('Verbinding geannuleerd. Popup venster werd gesloten voordat de autorisatie voltooid was.')
+          }
+        }
+      } catch (error) {
+        // Popup might be from different origin, ignore cross-origin errors
+        clearInterval(checkClosedInterval)
         setIsConnecting(false)
+        setIsAutoRetrying(false)
         window.removeEventListener('message', messageListener)
       }
-    }, 1000)
+    }
+
+    checkClosedInterval = setInterval(checkClosed, 1000)
+
+    // Add timeout for the entire process
+    setTimeout(() => {
+      if (popup && !popup.closed) {
+        popup.close()
+        clearInterval(checkClosedInterval)
+        setIsConnecting(false)
+        setIsAutoRetrying(false)
+        window.removeEventListener('message', messageListener)
+        setError('Verbinding time-out. Het autorisatieproces duurde te lang. Probeer opnieuw.')
+      }
+    }, 120000) // 2 minute timeout
   }
 
   const handleAuthSuccess = async (token: string) => {
@@ -420,6 +476,7 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
       localStorage.setItem('dropbox_access_token', token)
       setIsConnected(true)
       setIsConnecting(false)
+      setIsAutoRetrying(false)
       onConnectionChange(true)
       
       // Clear any previous errors
@@ -432,6 +489,7 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
       console.error('Error handling auth success:', error)
       setError('Fout bij het opslaan van Dropbox verbinding')
       setIsConnecting(false)
+      setIsAutoRetrying(false)
     }
   }
 
@@ -526,6 +584,8 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
     setConfigurationError(null)
     setShowDiagnostics(false)
     setDiagnosticSteps([])
+    setRetryCount(0)
+    setIsAutoRetrying(false)
     onConnectionChange(false)
     onFilesLoaded([])
   }
@@ -627,11 +687,13 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
           <div className="flex flex-col space-y-3">
             <button
               onClick={connectToDropbox}
-              disabled={isConnecting}
+              disabled={isConnecting || isAutoRetrying}
               className="px-6 py-3 text-white rounded-lg hover:opacity-90 transition-colors font-medium disabled:opacity-50"
               style={{backgroundColor: '#0061FF'}}
             >
-              {isConnecting ? '🔄 Verbinden...' : '🔗 Verbind met Dropbox'}
+              {isAutoRetrying ? '🔄 Automatisch opnieuw proberen...' : 
+               isConnecting ? '🔄 Verbinden...' : 
+               '🔗 Verbind met Dropbox'}
             </button>
             
             <button
@@ -652,9 +714,14 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
                 : 'bg-red-50 border border-red-200 text-red-700'
             }`}>
               <p className="text-sm">{error}</p>
-              {error.includes('verlopen') && (
+              {error.includes('verlopen') && retryCount > 0 && (
                 <p className="text-xs mt-2 opacity-75">
-                  💡 Tip: Probeer de verbinding sneller te voltooien, of controleer of je popup blocker actief is.
+                  💡 Tip: Probeer de verbinding sneller te voltooien. Klik direct op "Toestaan" in het Dropbox venster.
+                </p>
+              )}
+              {error.includes('popup') && (
+                <p className="text-xs mt-2 opacity-75">
+                  💡 Tip: Controleer je browser instellingen en sta popups toe voor deze website.
                 </p>
               )}
             </div>

@@ -7,6 +7,8 @@ export default function DropboxCallback() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
   const [message, setMessage] = useState('')
   const [shouldRetry, setShouldRetry] = useState(false)
+  const [retryDelay, setRetryDelay] = useState(0)
+  const [isRetrying, setIsRetrying] = useState(false)
   const searchParams = useSearchParams()
 
   useEffect(() => {
@@ -46,6 +48,9 @@ export default function DropboxCallback() {
       }
 
       try {
+        // Add a small delay to ensure the popup is fully loaded
+        await new Promise(resolve => setTimeout(resolve, 500))
+
         // Exchange code for access token
         const response = await fetch('/api/dropbox/auth', {
           method: 'POST',
@@ -71,14 +76,21 @@ export default function DropboxCallback() {
               accessToken: data.accessToken
             }, window.location.origin)
           }
+
+          // Auto-close after success
+          setTimeout(() => {
+            window.close()
+          }, 2000)
         } else {
           // Handle specific error types from the API
           const errorMessage = data.userMessage || data.error || 'Authentication failed'
           const retryable = data.shouldRetry !== false
+          const delay = data.retryDelay || 2000
           
           setStatus('error')
           setMessage(errorMessage)
           setShouldRetry(retryable)
+          setRetryDelay(delay)
           
           if (window.opener) {
             window.opener.postMessage({
@@ -86,8 +98,25 @@ export default function DropboxCallback() {
               error: data.error || 'Authentication failed',
               userMessage: errorMessage,
               errorType: data.errorType,
-              shouldRetry: retryable
+              shouldRetry: retryable,
+              retryDelay: delay
             }, window.location.origin)
+          }
+
+          // For expired code errors, show auto-retry countdown
+          if (data.errorType === 'expired_code' && retryable) {
+            let countdown = Math.floor(delay / 1000)
+            setMessage(`${errorMessage} Automatisch opnieuw proberen in ${countdown} seconden...`)
+            
+            const countdownInterval = setInterval(() => {
+              countdown--
+              if (countdown > 0) {
+                setMessage(`${errorMessage} Automatisch opnieuw proberen in ${countdown} seconden...`)
+              } else {
+                clearInterval(countdownInterval)
+                handleRetry()
+              }
+            }, 1000)
           }
         }
       } catch (error) {
@@ -112,13 +141,21 @@ export default function DropboxCallback() {
     handleCallback()
   }, [searchParams])
 
-  const handleRetry = () => {
+  const handleRetry = async () => {
+    if (isRetrying) return
+    
+    setIsRetrying(true)
+    
     if (window.opener) {
       window.opener.postMessage({
         type: 'DROPBOX_AUTH_RETRY'
       }, window.location.origin)
     }
-    window.close()
+    
+    // Small delay before closing to ensure message is sent
+    setTimeout(() => {
+      window.close()
+    }, 500)
   }
 
   return (
@@ -133,6 +170,9 @@ export default function DropboxCallback() {
               </h2>
               <p className="text-gray-600">
                 Bezig met het verwerken van je Dropbox autorisatie...
+              </p>
+              <p className="text-sm text-gray-500 mt-2">
+                Dit kan een paar seconden duren
               </p>
             </>
           )}
@@ -151,7 +191,7 @@ export default function DropboxCallback() {
                 {message}
               </p>
               <p className="text-sm text-gray-500">
-                Je kunt dit venster nu sluiten.
+                Dit venster sluit automatisch...
               </p>
             </>
           )}
@@ -166,16 +206,17 @@ export default function DropboxCallback() {
               <h2 className="text-xl font-semibold text-red-800 mb-2">
                 Verbinding Mislukt
               </h2>
-              <p className="text-gray-600 mb-4">
+              <p className="text-gray-600 mb-4 text-sm leading-relaxed">
                 {message}
               </p>
               <div className="space-y-2">
-                {shouldRetry && (
+                {shouldRetry && !message.includes('Automatisch opnieuw proberen') && (
                   <button
                     onClick={handleRetry}
-                    className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    disabled={isRetrying}
+                    className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
                   >
-                    Probeer Opnieuw
+                    {isRetrying ? 'Bezig met opnieuw proberen...' : 'Probeer Opnieuw'}
                   </button>
                 )}
                 <button
@@ -185,6 +226,14 @@ export default function DropboxCallback() {
                   Venster Sluiten
                 </button>
               </div>
+              
+              {message.includes('verlopen') && (
+                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-xs text-yellow-700">
+                    💡 <strong>Tip:</strong> Autorisatie codes verlopen snel. Voltooi het verbindingsproces zo snel mogelijk na het klikken op "Toestaan" in Dropbox.
+                  </p>
+                </div>
+              )}
             </>
           )}
         </div>
