@@ -24,8 +24,45 @@ export async function POST(request: NextRequest) {
       console.log('🔄 Force refresh requested - performing comprehensive Dropbox search')
     }
 
-    // Use list_folder for comprehensive file discovery instead of search
-    // This ensures we get ALL files, including newly added ones
+    // First, let's check the account info to understand the app configuration
+    try {
+      const accountResponse = await fetch('https://api.dropboxapi.com/2/users/get_current_account', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      })
+
+      if (!accountResponse.ok) {
+        const errorText = await accountResponse.text()
+        console.error('Dropbox account check error:', errorText)
+        return NextResponse.json(
+          { 
+            error: 'Dropbox authentication failed. Please reconnect your Dropbox account.',
+            details: 'Invalid or expired access token',
+            needsReauth: true
+          },
+          { status: 401 }
+        )
+      }
+    } catch (authError) {
+      console.error('Dropbox authentication error:', authError)
+      return NextResponse.json(
+        { 
+          error: 'Dropbox authentication failed. Please reconnect your Dropbox account.',
+          details: 'Unable to verify Dropbox connection',
+          needsReauth: true
+        },
+        { status: 401 }
+      )
+    }
+
+    // Use list_folder for comprehensive file discovery
+    // Start with empty path for Full Dropbox access, or use "/" for App folder access
+    let listPath = ''
+    
     const listResponse = await fetch('https://api.dropboxapi.com/2/files/list_folder', {
       method: 'POST',
       headers: {
@@ -33,7 +70,7 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        path: '',
+        path: listPath,
         recursive: true,
         include_media_info: false,
         include_deleted: false,
@@ -46,7 +83,26 @@ export async function POST(request: NextRequest) {
     if (!listResponse.ok) {
       const errorText = await listResponse.text()
       console.error('Dropbox list_folder error:', errorText)
-      throw new Error(`Dropbox API error: ${listResponse.status}`)
+      
+      // Check if this is an app folder configuration issue
+      if (errorText.includes('invalid_argument') || errorText.includes('not_found')) {
+        return NextResponse.json(
+          { 
+            error: 'Dropbox app configuration error',
+            details: 'Your Dropbox app may be configured for "App folder" access instead of "Full Dropbox" access. Please check your Dropbox App Console settings.',
+            configurationHelp: {
+              step1: 'Go to https://www.dropbox.com/developers/apps',
+              step2: 'Select your app',
+              step3: 'Ensure "Full Dropbox" access is selected (not "App folder")',
+              step4: 'Check that permissions include: files.metadata.read, files.content.read',
+              step5: 'Reconnect your Dropbox account in this application'
+            }
+          },
+          { status: 400 }
+        )
+      }
+      
+      throw new Error(`Dropbox API error: ${listResponse.status} - ${errorText}`)
     }
 
     const listData = await listResponse.json()
@@ -157,7 +213,15 @@ export async function POST(request: NextRequest) {
       { 
         error: 'Failed to search Dropbox files',
         details: errorMessage,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        troubleshooting: {
+          commonCauses: [
+            'Dropbox app configured for "App folder" instead of "Full Dropbox"',
+            'Missing required permissions: files.metadata.read, files.content.read',
+            'Expired or invalid access token'
+          ],
+          solution: 'Check your Dropbox App Console settings and reconnect your account'
+        }
       },
       { status: 500 }
     )

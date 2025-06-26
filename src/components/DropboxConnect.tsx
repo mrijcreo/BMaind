@@ -24,6 +24,7 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
   const [isLoadingFiles, setIsLoadingFiles] = useState(false)
   const [error, setError] = useState<string>('')
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null)
+  const [configurationError, setConfigurationError] = useState<any>(null)
 
   // Check for existing connection on mount
   useEffect(() => {
@@ -40,6 +41,7 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
   const connectToDropbox = () => {
     setIsConnecting(true)
     setError('')
+    setConfigurationError(null)
 
     // Dropbox OAuth URL
     const clientId = process.env.NEXT_PUBLIC_DROPBOX_APP_KEY
@@ -108,6 +110,7 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
   const loadDropboxFiles = async (token: string, showRefreshMessage: boolean = false) => {
     setIsLoadingFiles(true)
     setError('')
+    setConfigurationError(null)
 
     if (showRefreshMessage) {
       console.log('🔄 Refreshing Dropbox files...')
@@ -128,13 +131,9 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
         }),
       })
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
       const data = await response.json()
       
-      if (data.success) {
+      if (response.ok && data.success) {
         const previousCount = availableFiles.length
         const newCount = data.files.length
         
@@ -160,7 +159,22 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
         
         console.log(`📁 Loaded ${data.files.length} files from Dropbox`)
       } else {
-        throw new Error(data.error || 'Failed to load files')
+        // Handle specific error cases
+        if (data.needsReauth) {
+          // Token is invalid, need to reconnect
+          disconnectDropbox()
+          setError('Dropbox verbinding verlopen. Klik op "Verbind met Dropbox" om opnieuw te verbinden.')
+          return
+        }
+        
+        if (data.configurationHelp) {
+          // Configuration error - show detailed help
+          setConfigurationError(data.configurationHelp)
+          setError('Dropbox app configuratie probleem gedetecteerd. Zie onderstaande instructies.')
+          return
+        }
+        
+        throw new Error(data.error || data.details || 'Failed to load files')
       }
     } catch (error) {
       console.error('Error loading Dropbox files:', error)
@@ -181,6 +195,7 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
     setIsConnected(false)
     setAvailableFiles([])
     setLastRefresh(null)
+    setConfigurationError(null)
     onConnectionChange(false)
     onFilesLoaded([])
   }
@@ -273,6 +288,28 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
               <p className="text-sm">{error}</p>
             </div>
           )}
+
+          {/* Configuration Error Help */}
+          {configurationError && (
+            <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-left">
+              <h5 className="font-semibold text-yellow-800 mb-2">🔧 Dropbox App Configuratie Vereist</h5>
+              <p className="text-sm text-yellow-700 mb-3">
+                Je Dropbox app moet correct geconfigureerd worden voor volledige toegang:
+              </p>
+              <ol className="text-sm text-yellow-700 space-y-1 list-decimal list-inside">
+                <li>Ga naar <a href="https://www.dropbox.com/developers/apps" target="_blank" rel="noopener noreferrer" className="underline">Dropbox App Console</a></li>
+                <li>Selecteer je app</li>
+                <li>Zorg dat <strong>"Full Dropbox"</strong> toegang is geselecteerd (niet "App folder")</li>
+                <li>Controleer dat deze permissions zijn ingeschakeld:
+                  <ul className="ml-4 mt-1 space-y-1">
+                    <li>• files.metadata.read</li>
+                    <li>• files.content.read</li>
+                  </ul>
+                </li>
+                <li>Herverbind je Dropbox account in deze applicatie</li>
+              </ol>
+            </div>
+          )}
         </div>
       ) : (
         <div>
@@ -304,6 +341,23 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
                 : 'bg-red-50 border border-red-200 text-red-700'
             }`}>
               <p className="text-sm">{error}</p>
+            </div>
+          )}
+
+          {/* Configuration Error Help (when connected but having issues) */}
+          {configurationError && (
+            <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <h5 className="font-semibold text-yellow-800 mb-2">🔧 Configuratie Probleem</h5>
+              <p className="text-sm text-yellow-700 mb-3">
+                Er is een probleem met je Dropbox app configuratie:
+              </p>
+              <ol className="text-sm text-yellow-700 space-y-1 list-decimal list-inside">
+                <li>Ga naar <a href="https://www.dropbox.com/developers/apps" target="_blank" rel="noopener noreferrer" className="underline">Dropbox App Console</a></li>
+                <li>Selecteer je app</li>
+                <li>Zorg dat <strong>"Full Dropbox"</strong> toegang is geselecteerd</li>
+                <li>Controleer permissions: files.metadata.read, files.content.read</li>
+                <li>Klik op "Verbreek verbinding" en verbind opnieuw</li>
+              </ol>
             </div>
           )}
 
