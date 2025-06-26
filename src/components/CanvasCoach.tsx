@@ -38,6 +38,7 @@ export default function CanvasCoach() {
   }
 
   const handleFilesLoaded = (files: DropboxFile[]) => {
+    console.log(`📁 Files loaded in CanvasCoach: ${files.length} files`)
     setDropboxFiles(files)
   }
 
@@ -109,7 +110,7 @@ export default function CanvasCoach() {
 
               {/* File List */}
               <div className="space-y-3 mb-6">
-                {dropboxFiles.map((file) => (
+                {dropboxFiles.slice(0, 5).map((file) => (
                   <div key={file.id} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
@@ -129,6 +130,12 @@ export default function CanvasCoach() {
                     </div>
                   </div>
                 ))}
+                
+                {dropboxFiles.length > 5 && (
+                  <div className="text-center text-sm text-gray-500 py-2">
+                    ... en nog {dropboxFiles.length - 5} bestanden
+                  </div>
+                )}
               </div>
 
               {/* Dropbox Connection Management */}

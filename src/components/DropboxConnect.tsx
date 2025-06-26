@@ -23,6 +23,7 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
   const [availableFiles, setAvailableFiles] = useState<DropboxFile[]>([])
   const [isLoadingFiles, setIsLoadingFiles] = useState(false)
   const [error, setError] = useState<string>('')
+  const [lastRefresh, setLastRefresh] = useState<Date | null>(null)
 
   // Check for existing connection on mount
   useEffect(() => {
@@ -104,12 +105,16 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
     }
   }
 
-  const loadDropboxFiles = async (token: string) => {
+  const loadDropboxFiles = async (token: string, showRefreshMessage: boolean = false) => {
     setIsLoadingFiles(true)
     setError('')
 
+    if (showRefreshMessage) {
+      console.log('🔄 Refreshing Dropbox files...')
+    }
+
     try {
-      // Search for PDF files in Dropbox
+      // Search for PDF files in Dropbox with expanded search
       const response = await fetch('/api/dropbox/search-files', {
         method: 'POST',
         headers: {
@@ -117,8 +122,9 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
         },
         body: JSON.stringify({ 
           accessToken: token,
-          query: '.pdf',
-          fileExtensions: ['.pdf', '.docx', '.txt', '.md']
+          query: '', // Empty query to get all files
+          fileExtensions: ['.pdf', '.docx', '.txt', '.md'],
+          forceRefresh: showRefreshMessage // Add flag to indicate this is a refresh
         }),
       })
 
@@ -129,15 +135,41 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
       const data = await response.json()
       
       if (data.success) {
+        const previousCount = availableFiles.length
+        const newCount = data.files.length
+        
         setAvailableFiles(data.files)
         onFilesLoaded(data.files)
+        setLastRefresh(new Date())
+        
+        if (showRefreshMessage) {
+          if (newCount > previousCount) {
+            console.log(`✅ Refresh completed: ${newCount - previousCount} nieuwe bestanden gevonden!`)
+            setError(`✅ Refresh succesvol! ${newCount - previousCount} nieuwe bestanden gevonden.`)
+            setTimeout(() => setError(''), 5000)
+          } else if (newCount < previousCount) {
+            console.log(`✅ Refresh completed: ${previousCount - newCount} bestanden verwijderd.`)
+            setError(`✅ Refresh succesvol! ${previousCount - newCount} bestanden verwijderd.`)
+            setTimeout(() => setError(''), 5000)
+          } else {
+            console.log(`✅ Refresh completed: Geen wijzigingen gevonden.`)
+            setError(`✅ Refresh succesvol! Geen wijzigingen gevonden.`)
+            setTimeout(() => setError(''), 3000)
+          }
+        }
+        
         console.log(`📁 Loaded ${data.files.length} files from Dropbox`)
       } else {
         throw new Error(data.error || 'Failed to load files')
       }
     } catch (error) {
       console.error('Error loading Dropbox files:', error)
-      setError('Fout bij het laden van Dropbox bestanden: ' + (error instanceof Error ? error.message : 'Onbekende fout'))
+      const errorMessage = 'Fout bij het laden van Dropbox bestanden: ' + (error instanceof Error ? error.message : 'Onbekende fout')
+      setError(errorMessage)
+      
+      if (showRefreshMessage) {
+        setTimeout(() => setError(''), 8000) // Longer timeout for error messages during refresh
+      }
     } finally {
       setIsLoadingFiles(false)
     }
@@ -148,13 +180,14 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
     setAccessToken(null)
     setIsConnected(false)
     setAvailableFiles([])
+    setLastRefresh(null)
     onConnectionChange(false)
     onFilesLoaded([])
   }
 
   const refreshFiles = () => {
     if (accessToken) {
-      loadDropboxFiles(accessToken)
+      loadDropboxFiles(accessToken, true) // Pass true to indicate this is a manual refresh
     }
   }
 
@@ -173,10 +206,29 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
             <button
               onClick={refreshFiles}
               disabled={isLoadingFiles}
-              className="px-3 py-1 text-sm rounded-lg transition-colors"
-              style={{backgroundColor: '#eec434', color: '#233975'}}
+              className={`px-3 py-1 text-sm rounded-lg transition-colors font-medium ${
+                isLoadingFiles 
+                  ? 'bg-gray-200 text-gray-500 cursor-not-allowed' 
+                  : 'hover:opacity-90'
+              }`}
+              style={isLoadingFiles ? {} : {backgroundColor: '#eec434', color: '#233975'}}
+              title="Ververs bestandslijst uit Dropbox"
             >
-              {isLoadingFiles ? '🔄' : '🔄'} Ververs
+              {isLoadingFiles ? (
+                <span className="flex items-center space-x-1">
+                  <svg className="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  <span>Ververs...</span>
+                </span>
+              ) : (
+                <span className="flex items-center space-x-1">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  <span>Ververs</span>
+                </span>
+              )}
             </button>
             <button
               onClick={disconnectDropbox}
@@ -213,8 +265,12 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
           </button>
           
           {error && (
-            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-700 text-sm">{error}</p>
+            <div className={`mt-4 p-3 rounded-lg ${
+              error.includes('✅') 
+                ? 'bg-green-50 border border-green-200 text-green-700' 
+                : 'bg-red-50 border border-red-200 text-red-700'
+            }`}>
+              <p className="text-sm">{error}</p>
             </div>
           )}
         </div>
@@ -225,19 +281,55 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
               <div className="w-3 h-3 bg-green-500 rounded-full"></div>
               <span className="text-green-700 font-medium">Verbonden met Dropbox</span>
             </div>
-            <span className="text-sm text-gray-500">
-              {availableFiles.length} bestanden gevonden
-            </span>
+            <div className="text-right">
+              <span className="text-sm text-gray-500 block">
+                {availableFiles.length} bestanden gevonden
+              </span>
+              {lastRefresh && (
+                <span className="text-xs text-gray-400">
+                  Laatste update: {lastRefresh.toLocaleTimeString('nl-NL', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                  })}
+                </span>
+              )}
+            </div>
           </div>
+
+          {/* Status/Error Messages */}
+          {error && (
+            <div className={`mb-4 p-3 rounded-lg ${
+              error.includes('✅') 
+                ? 'bg-green-50 border border-green-200 text-green-700' 
+                : 'bg-red-50 border border-red-200 text-red-700'
+            }`}>
+              <p className="text-sm">{error}</p>
+            </div>
+          )}
 
           {isLoadingFiles ? (
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 mx-auto mb-2" style={{borderColor: '#233975'}}></div>
-              <p className="text-gray-600">Bestanden laden uit Dropbox...</p>
+              <p className="text-gray-600">
+                {lastRefresh ? 'Dropbox wordt ververst...' : 'Bestanden laden uit Dropbox...'}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                Zoekt naar nieuwe PDF's, DOCX, TXT en MD bestanden
+              </p>
             </div>
           ) : (
             <div className="space-y-3">
-              <h5 className="font-medium text-gray-800">Beschikbare Canvas Handleidingen:</h5>
+              <div className="flex items-center justify-between">
+                <h5 className="font-medium text-gray-800">Beschikbare Canvas Handleidingen:</h5>
+                <button
+                  onClick={refreshFiles}
+                  disabled={isLoadingFiles}
+                  className="text-xs text-blue-600 hover:text-blue-800 disabled:text-gray-400"
+                  title="Ververs lijst"
+                >
+                  🔄 Ververs lijst
+                </button>
+              </div>
               
               {availableFiles.length > 0 ? (
                 <div className="max-h-60 overflow-y-auto space-y-2">
@@ -262,7 +354,7 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
               ) : (
                 <div className="text-center py-6 text-gray-500">
                   <p>Geen Canvas handleidingen gevonden in je Dropbox.</p>
-                  <p className="text-sm mt-1">Upload PDF's of DOCX bestanden naar je Dropbox.</p>
+                  <p className="text-sm mt-1">Upload PDF's of DOCX bestanden naar je Dropbox en klik op "Ververs".</p>
                 </div>
               )}
             </div>
