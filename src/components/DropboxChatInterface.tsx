@@ -40,8 +40,8 @@ export default function DropboxChatInterface({ dropboxFiles, accessToken }: Drop
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const currentResponseRef = useRef<HTMLDivElement>(null)
 
-  // Increased character limit for comprehensive search
-  const MAX_MESSAGE_LENGTH = 180000
+  // Updated character limit to match backend capabilities
+  const MAX_MESSAGE_LENGTH = 200000
 
   // Helper function to get file count text
   const getFileCountText = () => {
