@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation'
 export default function DropboxCallback() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
   const [message, setMessage] = useState('')
+  const [shouldRetry, setShouldRetry] = useState(false)
   const searchParams = useSearchParams()
 
   useEffect(() => {
@@ -16,12 +17,14 @@ export default function DropboxCallback() {
       if (error) {
         setStatus('error')
         setMessage(`Dropbox autorisatie geweigerd: ${error}`)
+        setShouldRetry(true)
         
         // Send error to parent window
         if (window.opener) {
           window.opener.postMessage({
             type: 'DROPBOX_AUTH_ERROR',
-            error: error
+            error: error,
+            shouldRetry: true
           }, window.location.origin)
         }
         return
@@ -30,11 +33,13 @@ export default function DropboxCallback() {
       if (!code) {
         setStatus('error')
         setMessage('Geen autorisatie code ontvangen van Dropbox')
+        setShouldRetry(true)
         
         if (window.opener) {
           window.opener.postMessage({
             type: 'DROPBOX_AUTH_ERROR',
-            error: 'No authorization code received'
+            error: 'No authorization code received',
+            shouldRetry: true
           }, window.location.origin)
         }
         return
@@ -53,13 +58,9 @@ export default function DropboxCallback() {
           }),
         })
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
-        }
-
         const data = await response.json()
 
-        if (data.success) {
+        if (response.ok && data.success) {
           setStatus('success')
           setMessage('Dropbox verbinding succesvol!')
           
@@ -71,17 +72,38 @@ export default function DropboxCallback() {
             }, window.location.origin)
           }
         } else {
-          throw new Error(data.error || 'Authentication failed')
+          // Handle specific error types from the API
+          const errorMessage = data.userMessage || data.error || 'Authentication failed'
+          const retryable = data.shouldRetry !== false
+          
+          setStatus('error')
+          setMessage(errorMessage)
+          setShouldRetry(retryable)
+          
+          if (window.opener) {
+            window.opener.postMessage({
+              type: 'DROPBOX_AUTH_ERROR',
+              error: data.error || 'Authentication failed',
+              userMessage: errorMessage,
+              errorType: data.errorType,
+              shouldRetry: retryable
+            }, window.location.origin)
+          }
         }
       } catch (error) {
         console.error('Dropbox callback error:', error)
+        const errorMessage = 'Fout bij Dropbox autorisatie: ' + (error instanceof Error ? error.message : 'Onbekende fout')
+        
         setStatus('error')
-        setMessage('Fout bij Dropbox autorisatie: ' + (error instanceof Error ? error.message : 'Onbekende fout'))
+        setMessage(errorMessage)
+        setShouldRetry(true)
         
         if (window.opener) {
           window.opener.postMessage({
             type: 'DROPBOX_AUTH_ERROR',
-            error: error instanceof Error ? error.message : 'Unknown error'
+            error: error instanceof Error ? error.message : 'Unknown error',
+            userMessage: errorMessage,
+            shouldRetry: true
           }, window.location.origin)
         }
       }
@@ -89,6 +111,15 @@ export default function DropboxCallback() {
 
     handleCallback()
   }, [searchParams])
+
+  const handleRetry = () => {
+    if (window.opener) {
+      window.opener.postMessage({
+        type: 'DROPBOX_AUTH_RETRY'
+      }, window.location.origin)
+    }
+    window.close()
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -138,12 +169,22 @@ export default function DropboxCallback() {
               <p className="text-gray-600 mb-4">
                 {message}
               </p>
-              <button
-                onClick={() => window.close()}
-                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-              >
-                Venster Sluiten
-              </button>
+              <div className="space-y-2">
+                {shouldRetry && (
+                  <button
+                    onClick={handleRetry}
+                    className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Probeer Opnieuw
+                  </button>
+                )}
+                <button
+                  onClick={() => window.close()}
+                  className="w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                >
+                  Venster Sluiten
+                </button>
+              </div>
             </>
           )}
         </div>

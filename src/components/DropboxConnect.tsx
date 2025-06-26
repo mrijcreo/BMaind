@@ -381,10 +381,24 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
         popup?.close()
         window.removeEventListener('message', messageListener)
       } else if (event.data.type === 'DROPBOX_AUTH_ERROR') {
-        setError('Dropbox autorisatie mislukt: ' + event.data.error)
+        const errorMessage = event.data.userMessage || event.data.error || 'Onbekende fout'
+        
+        // Handle specific error types
+        if (event.data.errorType === 'expired_code') {
+          setError('⚠️ Autorisatie code verlopen. Dit gebeurt soms als het proces te lang duurt. Probeer opnieuw.')
+        } else {
+          setError('Dropbox autorisatie mislukt: ' + errorMessage)
+        }
+        
         setIsConnecting(false)
         popup?.close()
         window.removeEventListener('message', messageListener)
+      } else if (event.data.type === 'DROPBOX_AUTH_RETRY') {
+        // User clicked retry in the callback window
+        popup?.close()
+        window.removeEventListener('message', messageListener)
+        // Automatically retry the connection
+        setTimeout(() => connectToDropbox(), 1000)
       }
     }
 
@@ -407,6 +421,10 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
       setIsConnected(true)
       setIsConnecting(false)
       onConnectionChange(true)
+      
+      // Clear any previous errors
+      setError('')
+      setConfigurationError(null)
       
       // Load files from Dropbox
       await loadDropboxFiles(token)
@@ -629,9 +647,16 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
             <div className={`mt-4 p-3 rounded-lg ${
               error.includes('✅') 
                 ? 'bg-green-50 border border-green-200 text-green-700' 
+                : error.includes('⚠️')
+                ? 'bg-yellow-50 border border-yellow-200 text-yellow-700'
                 : 'bg-red-50 border border-red-200 text-red-700'
             }`}>
               <p className="text-sm">{error}</p>
+              {error.includes('verlopen') && (
+                <p className="text-xs mt-2 opacity-75">
+                  💡 Tip: Probeer de verbinding sneller te voltooien, of controleer of je popup blocker actief is.
+                </p>
+              )}
             </div>
           )}
 
