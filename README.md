@@ -1,10 +1,10 @@
-# 🚀 Ultimate AI Education Template - Next.js
+# 🚀 Canvas Coach Maike - Dropbox Integration
 
-> **Een complete, professionele AI template met Gemini API, camera, multi-file upload, audio transcriptie, advanced TTS en meer!**
+> **Een complete, professionele AI template met Gemini API, Dropbox integratie voor Canvas handleidingen zoeken**
 >
 > **Gemaakt door Tom Naberink voor de onderwijssector**
 
-Een geavanceerde Next.js template die **alles** biedt wat je nodig hebt voor innovatieve AI-projecten in het onderwijs. Van simpele chatbots tot complexe multi-modal AI applicaties - dit is je startpunt!
+Een geavanceerde Next.js template die **alles** biedt wat je nodig hebt voor innovatieve AI-projecten in het onderwijs. Van simpele chatbots tot complexe multi-modal AI applicaties met Dropbox integratie - dit is je startpunt!
 
 ## ✨ Complete Feature Set
 
@@ -17,6 +17,14 @@ Een geavanceerde Next.js template die **alles** biedt wat je nodig hebt voor inn
 - 🗣️ **Spraakherkenning**: Browser native voice input
 - ⚡ **Streaming Responses**: Real-time AI response weergave
 
+### 📁 **Dropbox Integratie**
+- 🔗 **OAuth Verbinding**: Veilige Dropbox autorisatie
+- 🔍 **Automatische Detectie**: Vindt alle Canvas PDF's en documenten
+- 📄 **Multi-Format Support**: PDF, DOCX, TXT, MD bestanden
+- 🔄 **Real-time Sync**: Automatische updates van bestandslijst
+- 🎯 **Smart Search**: Geavanceerde zoekalgoritmes door alle Dropbox content
+- 📊 **Comprehensive Analysis**: Analyseert ALLE documenten tegelijk
+
 ### 🔊 **Advanced Text-to-Speech (TTS)**
 - 🎙️ **Dual TTS Engines**: Microsoft TTS (standaard) + Gemini AI TTS
 - 🎭 **30 Gemini Voices**: Van Zephyr tot Sulafat met unieke karakteristieken
@@ -24,16 +32,6 @@ Een geavanceerde Next.js template die **alles** biedt wat je nodig hebt voor inn
 - ⚡ **Speed Control**: 4 snelheden voor Microsoft TTS (0.75x tot 2.0x)
 - ⚙️ **Unified Settings**: Één settings dropdown voor alle TTS opties
 - 📱 **Responsive Interface**: Geoptimaliseerd voor alle schermformaten
-
-### 📁 **Geavanceerd File Management**
-- 🖼️ **Afbeeldingen**: JPG, PNG, GIF, WebP, BMP - met preview en multi-select
-- 📄 **Documenten**: PDF, DOCX, TXT, MD - automatische tekst extractie
-- 📊 **Data**: CSV, JSON - gestructureerde data analyse
-- 🎵 **Audio**: MP3, WAV, OGG, M4A, AAC, FLAC, MP4, WebM - auto-transcriptie
-- 📱 **Camera Capture**: Direct foto's maken vanuit de browser
-- 🎯 **Drag & Drop**: Bestanden slepen en neerzetten
-- 📋 **Copy/Paste**: Afbeeldingen, URLs en tekst plakken
-- ✅ **Batch Processing**: Meerdere bestanden tegelijk selecteren en verwerken
 
 ### 🎨 **User Experience**
 - 💜 **Modern Design**: Strakke paarse interface met Tailwind CSS
@@ -52,102 +50,88 @@ Een geavanceerde Next.js template die **alles** biedt wat je nodig hebt voor inn
 
 ## 🚀 Quick Start: Van 0 naar AI in 5 Minuten!
 
-### Stap 1: 🍴 Fork dit template in GitHub
-Fork dit template in GitHub. Ga naar [github.com](https://github.com) en login in. Ga dan naar deze pagina: [https://github.com/TomNaberink/apitemplateTom](https://github.com/TomNaberink/apitemplateTom)
-Klik rechtsbovenin op 'Use this template', geef het een gepaste naam voor je project en klik op 'create fork'.
+### Stap 1: 🔑 API Keys Verkrijgen
+**Vereist:** 
+- [Gemini API Key](https://makersuite.google.com/app/apikey) (gratis)
+- [Dropbox App](https://www.dropbox.com/developers/apps) (gratis)
 
-### Stap 2: 📥 Import in Bolt.new
-Open [Bolt.new](https://bolt.new) en login. Selecteer 'import from github' en login op GitHub. Kies dan de 'repository' die je net hebt geforkt.
+### Stap 2: 🛠️ Dropbox App Setup
+1. Ga naar [Dropbox App Console](https://www.dropbox.com/developers/apps)
+2. Klik "Create app"
+3. Kies "Scoped access" → "Full Dropbox" → Geef je app een naam
+4. In App settings:
+   - **Permissions**: `files.metadata.read`, `files.content.read`
+   - **Redirect URIs**: `http://localhost:3000/dropbox-callback` (en je productie URL)
+5. Noteer je **App key** en **App secret**
 
-### Stap 3: 🔑 API Keys Verkrijgen
-**Vereist:** [Gemini API Key](https://makersuite.google.com/app/apikey) (gratis)
-
-⚠️ **Kosten**: Gemini heeft een genereuze gratis tier voor alle functionaliteiten inclusief audio transcriptie.
-
-### Stap 4: 🛠️ Project Setup
-```bash
-# Clone het project
-git clone https://github.com/TomNaberink/templateAPIinclcamera.git
-cd templateAPIinclcamera
-
-# Dependencies installeren
-npm install
-
-# Environment variables
-cp .env.example .env.local
-# Edit .env.local en voeg je API keys toe
-```
-
-### Stap 5: 🔧 Environment Configuration
+### Stap 3: 🔧 Environment Configuration
 Maak `.env.local` aan met je API keys:
 
 ```env
-# VEREIST: Voor alle Gemini AI functionaliteiten (inclusief audio transcriptie)
+# VEREIST: Voor alle Gemini AI functionaliteiten
 GEMINI_API_KEY=your_gemini_api_key_here
+
+# VEREIST: Voor Dropbox integratie
+NEXT_PUBLIC_DROPBOX_APP_KEY=your_dropbox_app_key_here
+DROPBOX_APP_SECRET=your_dropbox_app_secret_here
+
+# Next.js Configuration
+NEXTAUTH_URL=http://localhost:3000
 ```
 
-### Stap 6: 🎉 Start & Test
+### Stap 4: 📦 Project Setup
 ```bash
+# Dependencies installeren
+npm install
+
+# Development server starten
 npm run dev
 # Open http://localhost:3000
-# Test alle features met de ingebouwde interface!
 ```
 
-### Stap 7: 🚀 Deploy naar Netlify
+### Stap 5: 📁 Dropbox Verbinden
+1. **Klik "Verbind met Dropbox"** in de interface
+2. **Autoriseer** de app in het popup venster
+3. **Upload Canvas handleidingen** naar je Dropbox (PDF/DOCX)
+4. **Test** de zoekfunctionaliteit!
+
+### Stap 6: 🚀 Deploy naar Netlify
 1. **In Bolt.new**: "Deploy to Netlify"
 2. **Environment Variables toevoegen** in Netlify dashboard:
-   - `GEMINI_API_KEY` (vereist voor alle functionaliteiten)
-3. **Deploy** en je app is live!
+   - `GEMINI_API_KEY`
+   - `NEXT_PUBLIC_DROPBOX_APP_KEY`
+   - `DROPBOX_APP_SECRET`
+3. **Update Dropbox Redirect URI** naar je live URL
+4. **Deploy** en je app is live!
 
-## 📋 Volledige Feature Demonstratie
+## 📋 Dropbox Integratie Features
 
-### 🎯 **AI Model Selector**
+### 🔍 **Geavanceerde Zoekfunctionaliteit**
 ```
-🧠 Gemini 2.5 Pro: Hoogste kwaliteit, diepgaande analyse
-⚡ Gemini 2.5 Flash: Beste balans snelheid & kwaliteit (standaard)
-🌐 Gemini 2.0 Flash: Internet toegang + Google Search (minder slim model)
-```
-
-### 🔊 **Text-to-Speech Demo**
-```
-1. Schrijf een AI response
-2. Klik op ⚙️ voor TTS instellingen
-3. Kies tussen Microsoft TTS (standaard) of Gemini AI TTS
-4. Microsoft: Pas snelheid aan (4 opties)
-5. Gemini: Kies stem (30 opties) + emotie (7 opties)
-6. Klik 🔊 om audio af te spelen
+✅ Automatische detectie van Canvas handleidingen in Dropbox
+✅ Support voor PDF, DOCX, TXT, MD bestanden
+✅ Real-time download en analyse van alle documenten
+✅ Comprehensive search door ALLE content tegelijk
+✅ Smart prioritering op basis van relevantie
+✅ Bronvermelding per antwoord
 ```
 
-### 🎯 **Multi-Modal AI Conversaties**
+### 🎯 **Canvas-Specifieke Optimalisaties**
 ```
-✅ Upload 3 afbeeldingen + audio bestand + PDF document
-✅ Selecteer welke bestanden je wilt analyseren  
-✅ Vraag: "Vergelijk deze afbeeldingen met de audio transcriptie"
-✅ Gemini analyseert alles tegelijk en geeft uitgebreid antwoord
-✅ Luister naar response met TTS + download als Word
+🧠 Gemini 2.5 Flash: Beste balans snelheid & kwaliteit (standaard)
+⚡ Streaming responses voor real-time feedback
+🔍 Keyword extraction voor Canvas-specifieke termen
+📊 Content prioritering op basis van zoektermen
+🎯 Instructional content detection
+📝 Stap-voor-stap procedure herkenning
 ```
 
-### 📸 **Camera & Vision**
-- 📷 Direct foto's maken in de browser
-- 🖼️ Afbeelding preview met bewerking opties
-- 👁️ Gemini Vision voor object/tekst herkenning
-- 🔄 Multi-image comparison en analyse
-
-### 🎵 **Audio Processing Pipeline**
-```
-Audio Upload → Gemini Transcriptie → Gemini Analyse → Markdown Response → TTS Output
-```
-- Ondersteunt 6 audio formaten (MP3, WAV, AIFF, AAC, OGG, FLAC)
-- Nederlandse prompt voor optimale transcriptie
-- Tot 25MB bestanden (inline data limiet)
-- Perfecte transcriptie kwaliteit met Gemini 2.5 Flash
-
-### 📁 **Smart File Management**
-- **Visual File Manager**: Grid view met previews
-- **Batch Selection**: Checkboxes voor multi-select
-- **Type Icons**: 📸 🎵 📄 📊 voor duidelijke herkenning
-- **Size & Date Info**: Complete metadata weergave
-- **Drag & Drop Zones**: Visuele feedback bij slepen
+### 📁 **Dropbox File Management**
+- **Visual File Manager**: Overzicht van alle gevonden handleidingen
+- **Automatic Refresh**: Ververs bestandslijst met één klik
+- **File Type Icons**: 📄 PDF, 📝 DOCX, 📋 TXT herkenning
+- **Size & Metadata**: Complete bestandsinformatie
+- **Connection Status**: Real-time verbindingsstatus
 
 ## 🛠️ Technical Architecture
 
@@ -157,47 +141,50 @@ Audio Upload → Gemini Transcriptie → Gemini Analyse → Markdown Response �
 ├── 📦 package.json               # Dependencies & scripts
 ├── ⚙️ next.config.js             # Next.js configuration
 ├── 🌐 netlify.toml               # Netlify deployment config
-├── 📋 README.md                  # Deze documentatie
 └── src/
     ├── 🎨 app/
     │   ├── 🌍 globals.css         # Tailwind CSS styling
     │   ├── 📱 layout.tsx          # App layout & metadata
     │   ├── 🏠 page.tsx            # Main interface
+    │   ├── 📁 dropbox-callback/   # OAuth callback page
     │   └── 🔌 api/
     │       ├── 💬 chat/route.ts            # Gemini AI endpoint
     │       ├── 🌊 chat-stream/route.ts     # Streaming responses
     │       ├── 🔊 generate-tts/route.ts    # Gemini TTS endpoint
-    │       ├── 🎵 transcribe-audio/route.ts # Whisper transcription
-    │       └── 📄 upload-docx/route.ts     # Document processing
+    │       ├── 🎵 transcribe-audio/route.ts # Audio transcription
+    │       └── 📁 dropbox/
+    │           ├── 🔍 search-files/route.ts    # Dropbox file search
+    │           ├── 📄 get-file-content/route.ts # File download & parse
+    │           └── 🔐 auth/route.ts            # OAuth token exchange
     └── 🧩 components/
-        ├── 🤖 TestChatBot.tsx     # Main AI interface
-        ├── 🔊 GeminiTTS.tsx       # Gemini TTS component
-        ├── ⚙️ ResponseActions.tsx # TTS, Copy, Word export
-        ├── 📸 CameraCapture.tsx   # Camera functionality
+        ├── 🤖 CanvasCoach.tsx      # Main interface
+        ├── 📁 DropboxConnect.tsx   # Dropbox connection
+        ├── 💬 DropboxChatInterface.tsx # Chat with Dropbox search
+        ├── 🔊 GeminiTTS.tsx        # Gemini TTS component
+        ├── ⚙️ ResponseActions.tsx  # TTS, Copy, Word export
+        ├── 📸 CameraCapture.tsx    # Camera functionality
         ├── 📝 MarkdownRenderer.tsx # Response formatting
-        ├── 📁 FileUpload.tsx      # File handling
-        ├── 🗣️ VoiceInput.tsx      # Speech recognition
-        └── 📋 CopyButton.tsx      # Copy functionality
+        └── 🗣️ VoiceInput.tsx       # Speech recognition
 ```
 
 ### 🔌 **API Endpoints**
 
 | Endpoint | Functie | Input | Output |
 |----------|---------|-------|--------|
-| `/api/chat` | Gemini AI Conversatie | `message`, `images[]`, `aiModel` | AI Response |
-| `/api/chat-stream` | Streaming AI Response | `message`, `images[]`, `aiModel` | Server-Sent Events |
+| `/api/chat-stream` | Streaming AI Response | `message`, `aiModel` | Server-Sent Events |
 | `/api/generate-tts` | Gemini TTS Audio | `text`, `voiceName`, `emotion` | WAV Audio |
 | `/api/transcribe-audio` | Audio → Tekst | Audio File | Transcriptie |
-| `/api/upload-docx` | Document Processing | PDF/DOCX/CSV | Extracted Text |
+| `/api/dropbox/auth` | OAuth Token Exchange | `code`, `redirectUri` | Access Token |
+| `/api/dropbox/search-files` | Zoek Dropbox Bestanden | `accessToken`, `query` | File List |
+| `/api/dropbox/get-file-content` | Download & Parse | `accessToken`, `filePath` | Extracted Text |
 
 ### 📊 **Supported File Formats**
 
 | Category | Formats | Processing | Max Size |
 |----------|---------|------------|----------|
-| 📸 **Images** | JPG, PNG, GIF, WebP, BMP | Gemini Vision | 20MB |
-| 🎵 **Audio** | MP3, WAV, AIFF, AAC, OGG, FLAC | Gemini 2.5 Flash | 25MB |
 | 📄 **Documents** | PDF, DOCX, TXT, MD | Text Extraction | 10MB |
-| 📊 **Data** | CSV, JSON | Structure Parsing | 5MB |
+| 🎵 **Audio** | MP3, WAV, AIFF, AAC, OGG, FLAC | Gemini 2.5 Flash | 25MB |
+| 📸 **Images** | JPG, PNG, GIF, WebP, BMP | Gemini Vision | 20MB |
 
 ## 🔧 Advanced Usage & Customization
 
@@ -205,35 +192,26 @@ Audio Upload → Gemini Transcriptie → Gemini Analyse → Markdown Response �
 ```css
 /* globals.css - Pas het kleurenschema aan */
 :root {
-  --primary-color: #9333ea;     /* Paars accent */
-  --secondary-color: #f3f4f6;   /* Light background */
-  --text-color: #1f2937;        /* Dark text */
+  --primary-color: #233975;     /* Canvas blauw */
+  --secondary-color: #eec434;   /* Canvas geel */
+  --dropbox-color: #0061FF;     /* Dropbox blauw */
 }
 ```
 
 ### 🤖 **Gemini Model Configuration**
 ```typescript
-// src/app/api/chat/route.ts
-const modelName = aiModel === 'pro' ? 'gemini-2.5-pro-preview-06-05' :
-                 aiModel === 'smart' ? 'gemini-2.5-flash-preview-05-20' :
-                 'gemini-2.0-flash-exp' // internet model
+// src/components/DropboxChatInterface.tsx
+const modelName = 'gemini-2.5-flash-preview-05-20' // Optimaal voor Dropbox search
 ```
 
-### 🔊 **TTS Engine Customization**
+### 📁 **Dropbox Search Optimization**
 ```typescript
-// src/components/ResponseActions.tsx
-const [useGeminiTTS, setUseGeminiTTS] = useState(false) // Default to Microsoft TTS
-const [selectedGeminiVoice, setSelectedGeminiVoice] = useState(GEMINI_VOICES[3]) // Kore
-const [selectedGeminiEmotion, setSelectedGeminiEmotion] = useState(EMOTION_STYLES[0]) // Neutraal
-```
-
-### 🎵 **Gemini Audio Transcriptie Configuration**
-```typescript
-// src/app/api/transcribe-audio/route.ts
-const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
-const prompt = "Transcribeer deze audio naar Nederlandse tekst. Geef alleen de getranscribeerde tekst terug, zonder extra commentaar."
-const result = await model.generateContent([prompt, audioPart])
-const transcription = result.response.text()
+// src/app/api/dropbox/search-files/route.ts
+const searchOptions = {
+  max_results: 100,           // Meer bestanden
+  file_status: 'active',      // Alleen actieve bestanden
+  filename_only: false        // Zoek ook in content
+}
 ```
 
 ## 🌐 Production Deployment
@@ -243,90 +221,81 @@ const transcription = result.response.text()
 1. ✅ "Deploy to Netlify" button
 2. ✅ Build settings: `npm run build`
 3. ✅ Environment variables toevoegen
-4. ✅ Automatische HTTPS & CDN
-
-**Handmatig:**
-```bash
-# Build voor productie
-npm run build
-
-# Deploy naar Netlify CLI
-npm install -g netlify-cli
-netlify deploy --prod --dir=.next
-```
-
-### ⚡ **Vercel Alternative**
-```bash
-# Vercel deployment
-npm install -g vercel
-vercel --prod
-# Vergeet niet environment variables in te stellen!
-```
+4. ✅ Dropbox redirect URI updaten
+5. ✅ Automatische HTTPS & CDN
 
 ### 🔧 **Environment Variables (Production)**
 ```
-GEMINI_API_KEY=gai_xxxxxxxxxxxxx     # Google AI Studio
-OPENAI_API_KEY=sk-proj-xxxxxxxxxx    # OpenAI Platform
-NODE_ENV=production                   # Auto-set door Netlify
+GEMINI_API_KEY=gai_xxxxxxxxxxxxx           # Google AI Studio
+NEXT_PUBLIC_DROPBOX_APP_KEY=xxxxxxxxxx     # Dropbox App Console
+DROPBOX_APP_SECRET=xxxxxxxxxx              # Dropbox App Console (SECRET!)
+NEXTAUTH_URL=https://your-domain.com       # Je productie URL
 ```
+
+### 📁 **Dropbox App Production Setup**
+1. **App Console** → Je app → Settings
+2. **Redirect URIs** toevoegen: `https://your-domain.com/dropbox-callback`
+3. **Status** → "Apply for production" (voor meer dan 500 users)
+4. **Permissions** controleren: `files.metadata.read`, `files.content.read`
 
 ## 🚨 Troubleshooting & Common Issues
 
-### ❌ **Build Failures**
+### ❌ **Dropbox Connection Issues**
 | Error | Oorzaak | Oplossing |
 |-------|---------|-----------|
-| `GEMINI_API_KEY not found` | Missing env var | Check Netlify environment variables |
-| `Module not found: openai` | Missing dependency | Run `npm install` |
-| `Build command failed` | Wrong build settings | Set build command to `npm run build` |
-| `Hydration mismatch` | SSR/Client mismatch | Clear `.next` cache, restart dev server |
+| `App key not configured` | Missing env var | Check `NEXT_PUBLIC_DROPBOX_APP_KEY` |
+| `Redirect URI mismatch` | Wrong callback URL | Update Dropbox app settings |
+| `Access denied` | User cancelled | Retry connection process |
+| `Token exchange failed` | Wrong app secret | Check `DROPBOX_APP_SECRET` |
 
-### 🔧 **API Issues**
+### 🔧 **File Processing Issues**
 | Problem | Solution |
 |---------|----------|
-| Gemini 429 Error | Check API quota/billing |
-| Whisper fails | Verify audio format & size |
-| Upload timeout | Reduce file size < 25MB |
-| CORS errors | Check API route configuration |
+| PDF parsing fails | Check file isn't password protected |
+| DOCX not readable | Ensure file isn't corrupted |
+| Large files timeout | Reduce file size < 10MB |
+| No files found | Check Dropbox permissions |
 
 ### 📱 **Mobile Issues**
-- **Camera niet beschikbaar**: Gebruik HTTPS (required voor camera API)
-- **File upload fails**: Check mobile browser compatibility
-- **Touch events**: Tested op iOS Safari & Android Chrome
+- **Popup blocked**: Gebruik desktop voor eerste verbinding
+- **OAuth redirect**: Controleer mobile browser compatibility
+- **File access**: Dropbox mobile app kan interfereren
 
 ## 🎓 Educational Use Cases
 
 ### 👨‍🏫 **Voor Docenten**
-- 🎙️ **Lezingen transcriberen** en analyseren met AI
-- 📸 **Werkstukken fotograferen** en automatisch feedback geven  
-- 📄 **PDF's uploaden** voor snelle samenvatting
-- 🗣️ **Spraaknotities** omzetten naar tekst en structureren
+- 📁 **Canvas handleidingen** centraal opslaan in Dropbox
+- 🔍 **Instant zoeken** door alle documentatie
+- 📝 **Stap-voor-stap instructies** krijgen voor Canvas functies
+- 🎯 **Specifieke procedures** vinden zonder handmatig zoeken
 
 ### 👩‍🎓 **Voor Studenten**
-- 📝 **Aantekeningen verbeteren** met AI ondersteuning
-- 🔍 **Complexe teksten analyseren** en uitleggen
-- 🎨 **Creatieve projecten** met multi-modal input
-- 💡 **Concepten begrijpen** door verschillende media te combineren
+- 📚 **Canvas hulp** op basis van officiële handleidingen
+- 🔍 **Snel antwoorden** vinden op Canvas vragen
+- 📱 **Mobile toegang** tot alle Canvas documentatie
+- 💡 **Contextuele hulp** bij Canvas problemen
 
 ### 🏫 **Institutionele Deployment**
 ```bash
 # Multi-tenant setup
 GEMINI_API_KEY=shared_institutional_key
-OPENAI_API_KEY=shared_whisper_key
-STUDENT_MODE=true                    # Simplified interface
-ADMIN_DASHBOARD=true                # Usage analytics
+NEXT_PUBLIC_DROPBOX_APP_KEY=institutional_app_key
+DROPBOX_APP_SECRET=institutional_app_secret
+CANVAS_INSTITUTION=your_institution_name
 ```
 
 ## 🔒 Security & Privacy
 
 ### 🛡️ **Data Protection**
-- ✅ **Server-side API keys**: Nooit client-side exposed
-- ✅ **File validation**: Strict type & size checking  
-- ✅ **Input sanitization**: XSS prevention
+- ✅ **OAuth 2.0**: Veilige Dropbox autorisatie
+- ✅ **Server-side secrets**: App secrets nooit client-side
+- ✅ **Temporary processing**: Bestanden niet permanent opgeslagen
 - ✅ **HTTPS only**: Secure transmission
+- ✅ **Token management**: Secure token storage
 
 ### 📊 **Data Handling**
-- 🔄 **Temporary processing**: Files niet permanent opgeslagen
-- 🗑️ **Auto-cleanup**: Uploads automatisch verwijderd
+- 🔄 **Read-only access**: Alleen lezen van Dropbox bestanden
+- 🗑️ **Auto-cleanup**: Downloads automatisch verwijderd
 - 🚫 **No tracking**: Geen user analytics by default
 - 🔐 **Privacy first**: GDPR compliant design
 
@@ -345,47 +314,40 @@ npm run build && npm start
 ```
 
 ### 📈 **Feature Roadmap**
-- [ ] **PDF OCR**: Scanned documents verwerken
-- [ ] **Video Upload**: Frame extraction en analyse
-- [ ] **Real-time Collaboration**: Multiple users
-- [ ] **Template Library**: Pre-made educational prompts
+- [ ] **Multi-Dropbox Accounts**: Support voor meerdere accounts
+- [ ] **Folder Organization**: Specifieke Canvas folders
+- [ ] **Real-time Sync**: Live updates van Dropbox changes
+- [ ] **Collaborative Features**: Team Canvas documentatie
 - [ ] **Analytics Dashboard**: Usage insights
-- [ ] **SSO Integration**: School account systems
-
-### 🐛 **Bug Reports**
-Found een issue? [Open een GitHub Issue](https://github.com/TomNaberink/templateAPIinclcamera/issues) met:
-- 🖥️ Browser & OS version
-- 📝 Steps to reproduce
-- 📋 Error messages/screenshots
-- 🎯 Expected vs actual behavior
+- [ ] **Advanced Search**: Semantic search in documents
 
 ## 📚 Resources & Links
 
 ### 🔗 **API Documentation**
 - [Gemini API Docs](https://ai.google.dev/docs) - Google AI ontwikkelaar resources
-- [OpenAI Whisper](https://platform.openai.com/docs/guides/speech-to-text) - Audio transcriptie
+- [Dropbox API v2](https://www.dropbox.com/developers/documentation/http/documentation) - Dropbox integratie
 - [Next.js 15](https://nextjs.org/docs) - Framework documentatie
 
-### 🎥 **Video Tutorials**
+### 🎥 **Setup Tutorials**
 - [Gemini API Setup](https://makersuite.google.com/app/apikey) - API key verkrijgen
+- [Dropbox App Creation](https://www.dropbox.com/developers/apps) - App registratie
 - [Netlify Deployment](https://netlify.com) - Hosting platform
-- [OpenAI Platform](https://platform.openai.com) - Whisper API setup
 
 ### 💡 **Community**
-- [GitHub Repository](https://github.com/TomNaberink/templateAPIinclcamera)
-- [Issues & Feature Requests](https://github.com/TomNaberink/templateAPIinclcamera/issues)
+- [GitHub Repository](https://github.com/TomNaberink/canvas-coach-dropbox)
+- [Issues & Feature Requests](https://github.com/TomNaberink/canvas-coach-dropbox/issues)
 - [Tom Naberink LinkedIn](https://linkedin.com/in/tomnaberink) - Direct contact
 
 ---
 
-## 🎉 **Ready to Transform Education?**
+## 🎉 **Ready to Transform Canvas Education?**
 
-Deze template geeft je **alles** wat je nodig hebt om geavanceerde AI-applicaties te bouwen voor het onderwijs. Van simpele chatbots tot complexe multi-modal AI-assistenten - de mogelijkheden zijn eindeloos!
+Deze template geeft je **alles** wat je nodig hebt om geavanceerde AI-applicaties te bouwen voor Canvas LMS ondersteuning. Van simpele vragen beantwoorden tot complexe multi-document analyse - de mogelijkheden zijn eindeloos!
 
 **💜 Gemaakt met passie door Tom Naberink**  
-**🚀 Deploy nu en start met bouwen aan de toekomst van onderwijs!**
+**🚀 Deploy nu en start met bouwen aan de toekomst van Canvas onderwijs!**
 
 ---
 
-*Versie 1.0 - Complete AI Education Template*  
-*Last updated: Juni 2025* 
+*Versie 2.0 - Canvas Coach met Dropbox Integration*  
+*Last updated: December 2024*
