@@ -24,14 +24,6 @@ const nextConfig = {
       fs: false,
       path: false,
     };
-
-    // Handle pdf-parse module resolution issues
-    if (isServer) {
-      config.externals = config.externals || [];
-      config.externals.push({
-        'pdf-parse': 'commonjs pdf-parse'
-      });
-    }
     
     return config;
   },
