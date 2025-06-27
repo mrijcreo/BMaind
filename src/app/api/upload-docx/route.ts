@@ -52,8 +52,7 @@ export async function POST(request: NextRequest) {
 
         const pdfData = await pdfParse(buffer, {
           // Add options to handle problematic PDFs
-          max: 0, // Parse all pages
-          version: 'v1.10.100' // Specify version if needed
+          max: 0 // Parse all pages
         });
         
         textContent = pdfData.text;
