@@ -38,7 +38,7 @@ export default function CanvasCoach() {
   }
 
   const handleFilesLoaded = (files: DropboxFile[]) => {
-    console.log(`📁 Files loaded in CanvasCoach: ${files.length} files`)
+    console.log(`📁 Files loaded in BMaind: ${files.length} files`)
     setDropboxFiles(files)
   }
 
@@ -54,11 +54,11 @@ export default function CanvasCoach() {
               </svg>
             </div>
             <h2 className="text-3xl font-bold mb-4" style={{color: '#233975'}}>
-              Welkom bij Canvas Coach Maike! 👋
+              Welkom bij BMaind! 👋
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Ik ben jouw professionele onderwijstechnologie-expert en coach, gespecialiseerd in Canvas LMS. 
-              Verbind met Dropbox en ik help je met al je Canvas-gerelateerde vragen door je handleidingen te doorzoeken!
+              Ik ben jouw intelligente AI-assistent, gespecialiseerd in het analyseren en doorzoeken van je Dropbox documenten. 
+              Verbind met Dropbox en ik help je met al je vragen door je documenten grondig te analyseren!
             </p>
           </div>
 
@@ -73,17 +73,17 @@ export default function CanvasCoach() {
               <div className="text-center">
                 <div className="w-10 h-10 text-white rounded-full flex items-center justify-center mx-auto mb-2 font-bold" style={{backgroundColor: '#0061FF'}}>1</div>
                 <p className="font-medium" style={{color: '#233975'}}>Verbind met Dropbox</p>
-                <p className="text-gray-600 text-sm">Geef toegang tot je Canvas handleidingen</p>
+                <p className="text-gray-600 text-sm">Geef toegang tot je documenten</p>
               </div>
               <div className="text-center">
                 <div className="w-10 h-10 text-white rounded-full flex items-center justify-center mx-auto mb-2 font-bold" style={{backgroundColor: '#233975'}}>2</div>
                 <p className="font-medium" style={{color: '#233975'}}>Automatische detectie</p>
-                <p className="text-gray-600 text-sm">Ik vind alle Canvas PDF's en documenten</p>
+                <p className="text-gray-600 text-sm">Ik vind alle PDF's en documenten</p>
               </div>
               <div className="text-center">
                 <div className="w-10 h-10 text-white rounded-full flex items-center justify-center mx-auto mb-2 font-bold" style={{backgroundColor: '#233975'}}>3</div>
                 <p className="font-medium" style={{color: '#233975'}}>Stel vragen</p>
-                <p className="text-gray-600 text-sm">Krijg expert Canvas ondersteuning</p>
+                <p className="text-gray-600 text-sm">Krijg intelligente antwoorden</p>
               </div>
             </div>
           </div>

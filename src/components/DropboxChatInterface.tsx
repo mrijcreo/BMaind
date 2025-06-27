@@ -124,7 +124,7 @@ GEVONDEN: ${searchResults.length} relevante documenten uit ${dropboxFiles.length
 GEMIDDELDE CONFIDENCE: ${searchMetadata?.averageConfidence || 0}%
 HOOGSTE RELEVANTIE SCORE: ${searchMetadata?.highestScore || 0}
 
-INSTRUCTIE: Gebruik de onderstaande Gemini 2.5 Pro smart search resultaten om een uitgebreid, accuraat en professioneel antwoord te geven. Elke sectie is geanalyseerd door Gemini 2.5 Pro met geavanceerde reasoning en Canvas LMS expertise.
+INSTRUCTIE: Gebruik de onderstaande Gemini 2.5 Pro smart search resultaten om een uitgebreid, accuraat en professioneel antwoord te geven. Elke sectie is geanalyseerd door Gemini 2.5 Pro met geavanceerde reasoning en documentanalyse expertise.
 
 === GEMINI 2.5 PRO SMART SEARCH RESULTATEN ===
 `
@@ -139,7 +139,7 @@ INSTRUCTIE: Gebruik de onderstaande Gemini 2.5 Pro smart search resultaten om ee
 
 📝 EXPERT SAMENVATTING: ${result.summary}
 
-🔍 BELANGRIJKSTE CANVAS LMS PUNTEN:
+🔍 BELANGRIJKSTE PUNTEN:
 ${result.keyPoints.map(point => `• ${point}`).join('\n')}
 
 📋 MEEST RELEVANTE SECTIES (door Gemini 2.5 Pro geselecteerd):
@@ -154,15 +154,14 @@ ${section}
 
 === EINDE GEMINI 2.5 PRO SMART SEARCH RESULTATEN ===
 
-Geef nu een uitgebreid, professioneel Canvas LMS expert antwoord op de vraag: "${userQuestion}"
+Geef nu een uitgebreid, professioneel antwoord op de vraag: "${userQuestion}"
 
 ANTWOORD VEREISTEN:
 - Gebruik de Gemini 2.5 Pro geanalyseerde informatie uit de smart search resultaten
 - Verwijs naar specifieke documenten met hun confidence scores waar relevant
 - Geef stap-voor-stap instructies waar mogelijk
-- Gebruik professionele Canvas LMS terminologie
-- Spreek over "cursisten" in plaats van "studenten"
-- Vermeld specifieke menu-paden, button namen, en instellingen waar beschikbaar
+- Gebruik professionele terminologie
+- Vermeld specifieke details, procedures, en instellingen waar beschikbaar
 - Geef praktische tips en best practices
 - Waarschuw voor potentiële valkuilen of belangrijke overwegingen
 `
@@ -176,25 +175,25 @@ ANTWOORD VEREISTEN:
       const welcomeMessage: ChatMessage = {
         id: 'welcome',
         type: 'assistant',
-        content: `Hallo! Ik ben Canvas Coach Maike 👋
+        content: `Hallo! Ik ben BMaind 👋
 
-**Welke Canvas-vraag heb je en waar kan ik je bij helpen?**
+**Welke vraag heb je over je documenten?**
 
-Ik ben een professionele onderwijstechnologie-expert gespecialiseerd in Canvas LMS. Ik kan je helpen met:
+Ik ben een intelligente AI-assistent gespecialiseerd in het analyseren van documentinhoud. Ik kan je helpen met:
 
-• 📚 **Canvas functionaliteiten** - Hoe gebruik je specifieke tools?
-• 👥 **Cursistenbeheer** - Inschrijvingen, groepen, communicatie  
-• 📝 **Opdrachten & Toetsen** - Aanmaken, beoordelen, feedback geven
-• 📊 **Cijferboek** - Beoordelingen, rubrics, rapportages
-• 🎯 **Cursusontwerp** - Modules, content organisatie
-• 🔧 **Instellingen** - Configuratie en personalisatie
-• ⚙️ **Automatisering** - Standaardwaarden, bulk acties, workflows
+• 📚 **Documentanalyse** - Begrijpen van complexe inhoud
+• 🔍 **Informatie zoeken** - Vinden van specifieke details  
+• 📝 **Samenvattingen** - Kernpunten uit lange documenten
+• 📊 **Data-extractie** - Belangrijke gegevens identificeren
+• 🎯 **Vraagbeantwoording** - Specifieke antwoorden uit je content
+• 🔧 **Procedures** - Stap-voor-stap instructies
+• ⚙️ **Best practices** - Aanbevelingen en tips
 
-🏆 **Gemini 2.5 Pro Smart Search**: Ik doorzoek ${getFileCountText()} **met de meest geavanceerde AI** uit je Dropbox met superieure reasoning, Canvas LMS expertise en diepgaande content analyse!
+🏆 **Gemini 2.5 Pro Smart Search**: Ik doorzoek ${getFileCountText()} **met de meest geavanceerde AI** uit je Dropbox met superieure reasoning, documentanalyse expertise en diepgaande content analyse!
 
 **Waarom Gemini 2.5 Pro?**
-• 🧠 **Superieure reasoning** - Begrijpt complexe Canvas workflows
-• 🎯 **Canvas LMS expertise** - Herkent onderwijscontext en terminologie  
+• 🧠 **Superieure reasoning** - Begrijpt complexe documentstructuren
+• 🎯 **Documentanalyse expertise** - Herkent context en belangrijke informatie  
 • 🔍 **Diepgaande analyse** - Vindt ook impliciete en gerelateerde informatie
 • 💡 **Confidence scoring** - Betrouwbaarheidsscores voor elk resultaat
 • ⚡ **Geavanceerde ranking** - Intelligente prioritering van resultaten
@@ -257,15 +256,14 @@ Stel gerust je vraag! 🚀`,
         if (smartSearchResults.length > 0) {
           const smartContext = prepareSmartSearchContext(smartSearchResults, inputMessage.trim())
           
-          payload.message = `Je bent Canvas Coach Maike, een professionele Canvas LMS expert en coach. Beantwoord de volgende vraag op basis van de Gemini 2.5 Pro Smart Search resultaten uit Dropbox.
+          payload.message = `Je bent BMaind, een intelligente AI-assistent gespecialiseerd in documentanalyse. Beantwoord de volgende vraag op basis van de Gemini 2.5 Pro Smart Search resultaten uit Dropbox.
 
 🏆 GEMINI 2.5 PRO SMART SEARCH INSTRUCTIES:
 - De onderstaande informatie is geanalyseerd door Gemini 2.5 Pro met geavanceerde reasoning
 - Elke sectie heeft een relevantiescore en confidence score van Gemini 2.5 Pro
-- Gebruik de expert reasoning en Canvas LMS context die Gemini 2.5 Pro heeft geïdentificeerd
-- Geef een uitgebreid, professioneel antwoord met specifieke Canvas instructies
+- Gebruik de expert reasoning en documentanalyse context die Gemini 2.5 Pro heeft geïdentificeerd
+- Geef een uitgebreid, professioneel antwoord met specifieke instructies
 - Verwijs naar documenten met hun confidence scores waar relevant
-- Spreek over "cursisten" in plaats van "studenten"
 
 ${smartContext}`
 
@@ -277,16 +275,16 @@ ${smartContext}`
           })
         } else {
           // Fallback to regular response if no relevant files found
-          payload.message = `Je bent Canvas Coach Maike, een professionele Canvas LMS expert en coach. 
+          payload.message = `Je bent BMaind, een intelligente AI-assistent gespecialiseerd in documentanalyse. 
 
 De Gemini 2.5 Pro Smart Search heeft geen relevante informatie gevonden in de ${dropboxFiles.length} Dropbox documenten voor deze vraag: "${inputMessage.trim()}"
 
-Beantwoord de vraag op basis van je algemene Canvas LMS expertise. Spreek over "cursisten" in plaats van "studenten".
+Beantwoord de vraag op basis van je algemene kennis en documentanalyse expertise.
 
 VRAAG: ${inputMessage.trim()}`
         }
       } else {
-        payload.message = `Je bent Canvas Coach Maike, een professionele Canvas LMS expert en coach. Beantwoord de volgende Canvas-vraag op basis van je expertise. Spreek over "cursisten" in plaats van "studenten".
+        payload.message = `Je bent BMaind, een intelligente AI-assistent gespecialiseerd in documentanalyse. Beantwoord de volgende vraag op basis van je expertise.
 
 VRAAG: ${inputMessage.trim()}`
       }
@@ -435,9 +433,9 @@ ${userFriendlyMessage}
       const welcomeMessage: ChatMessage = {
         id: 'welcome_new',
         type: 'assistant',
-        content: `Hallo! Ik ben Canvas Coach Maike 👋
+        content: `Hallo! Ik ben BMaind 👋
 
-**Welke Canvas-vraag heb je en waar kan ik je bij helpen?**
+**Welke vraag heb je over je documenten?**
 
 🏆 **Gemini 2.5 Pro Smart Search**: Ik doorzoek ${getFileCountText()} **met de meest geavanceerde AI** uit je Dropbox!
 
@@ -456,7 +454,7 @@ Stel gerust je vraag! 🚀`,
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
           </svg>
           <p className="text-lg font-medium">Verbind eerst met Dropbox</p>
-          <p className="text-sm">Om te kunnen chatten met je Canvas handleidingen</p>
+          <p className="text-sm">Om te kunnen chatten met je documenten</p>
         </div>
       </div>
     )
@@ -474,7 +472,7 @@ Stel gerust je vraag! 🚀`,
               </svg>
             </div>
             <div>
-              <h3 className="text-lg font-semibold" style={{color: '#233975'}}>Canvas Coach Maike Chat</h3>
+              <h3 className="text-lg font-semibold" style={{color: '#233975'}}>BMaind Chat</h3>
               <p className="text-sm text-gray-600">
                 🏆 Gemini 2.5 Pro Smart Search in ${getFileCountText()} uit Dropbox
               </p>
@@ -561,7 +559,7 @@ Stel gerust je vraag! 🚀`,
                 </div>
                 <span className="text-sm font-medium">🏆 Gemini 2.5 Pro analyseert alle Dropbox bestanden...</span>
               </div>
-              <p className="text-xs mt-1 ml-8">Geavanceerde AI reasoning door {dropboxFiles.length} documenten met Canvas LMS expertise</p>
+              <p className="text-xs mt-1 ml-8">Geavanceerde AI reasoning door {dropboxFiles.length} documenten met documentanalyse expertise</p>
             </div>
           </div>
         )}
@@ -593,7 +591,7 @@ Stel gerust je vraag! 🚀`,
                   <div className="w-2 h-2 rounded-full animate-bounce" style={{backgroundColor: '#233975', animationDelay: '0.1s'}}></div>
                   <div className="w-2 h-2 rounded-full animate-bounce" style={{backgroundColor: '#233975', animationDelay: '0.2s'}}></div>
                 </div>
-                <span className="text-sm text-gray-600">🏆 Canvas Coach Maike denkt na met Gemini 2.5 Pro...</span>
+                <span className="text-sm text-gray-600">🏆 BMaind denkt na met Gemini 2.5 Pro...</span>
               </div>
             </div>
           </div>
@@ -611,7 +609,7 @@ Stel gerust je vraag! 🚀`,
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Stel je Canvas-vraag... (bijv. 'Hoe maak ik alle punten automatisch op 0 als cursisten niet indienden?')"
+              placeholder="Stel je vraag over de documenten... (bijv. 'Wat zijn de belangrijkste punten in document X?')"
               className="w-full p-3 border border-gray-300 rounded-xl resize-none focus:outline-none focus:ring-2 focus:border-transparent"
               style={{'--tw-ring-color': '#233975'} as any}
               rows={2}
@@ -630,7 +628,7 @@ Stel gerust je vraag! 🚀`,
         
         <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
           <span>
-            🏆 **GEMINI 2.5 PRO SMART SEARCH** door ${getFileCountText()} met superieure AI reasoning & Canvas expertise
+            🏆 **GEMINI 2.5 PRO SMART SEARCH** door ${getFileCountText()} met superieure AI reasoning & documentanalyse expertise
           </span>
           <span>Enter = verzenden • Shift+Enter = nieuwe regel</span>
         </div>

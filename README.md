@@ -1,10 +1,10 @@
-# 🚀 Canvas Coach Maike - Dropbox Integration
+# 🚀 BMaind - Dropbox Integration
 
-> **Een complete, professionele AI template met Gemini API, Dropbox integratie voor Canvas handleidingen zoeken**
+> **Een complete, professionele AI template met Gemini API, Dropbox integratie voor intelligente documentanalyse**
 >
-> **Gemaakt door Tom Naberink voor de onderwijssector**
+> **Gemaakt door Tom Naberink voor documentanalyse en kennisextractie**
 
-Een geavanceerde Next.js template die **alles** biedt wat je nodig hebt voor innovatieve AI-projecten in het onderwijs. Van simpele chatbots tot complexe multi-modal AI applicaties met Dropbox integratie - dit is je startpunt!
+Een geavanceerde Next.js template die **alles** biedt wat je nodig hebt voor innovatieve AI-projecten met documentanalyse. Van simpele chatbots tot complexe multi-modal AI applicaties met Dropbox integratie - dit is je startpunt!
 
 ## ✨ Complete Feature Set
 
@@ -19,7 +19,7 @@ Een geavanceerde Next.js template die **alles** biedt wat je nodig hebt voor inn
 
 ### 📁 **Dropbox Integratie**
 - 🔗 **OAuth Verbinding**: Veilige Dropbox autorisatie
-- 🔍 **Automatische Detectie**: Vindt alle Canvas PDF's en documenten
+- 🔍 **Automatische Detectie**: Vindt alle PDF's en documenten
 - 📄 **Multi-Format Support**: PDF, DOCX, TXT, MD bestanden
 - 🔄 **Real-time Sync**: Automatische updates van bestandslijst
 - 🎯 **Smart Search**: Geavanceerde zoekalgoritmes door alle Dropbox content
@@ -92,7 +92,7 @@ npm run dev
 ### Stap 5: 📁 Dropbox Verbinden
 1. **Klik "Verbind met Dropbox"** in de interface
 2. **Autoriseer** de app in het popup venster
-3. **Upload Canvas handleidingen** naar je Dropbox (PDF/DOCX)
+3. **Upload documenten** naar je Dropbox (PDF/DOCX)
 4. **Test** de zoekfunctionaliteit!
 
 ### Stap 6: 🚀 Deploy naar Netlify
@@ -108,7 +108,7 @@ npm run dev
 
 ### 🔍 **Geavanceerde Zoekfunctionaliteit**
 ```
-✅ Automatische detectie van Canvas handleidingen in Dropbox
+✅ Automatische detectie van documenten in Dropbox
 ✅ Support voor PDF, DOCX, TXT, MD bestanden
 ✅ Real-time download en analyse van alle documenten
 ✅ Comprehensive search door ALLE content tegelijk
@@ -116,18 +116,18 @@ npm run dev
 ✅ Bronvermelding per antwoord
 ```
 
-### 🎯 **Canvas-Specifieke Optimalisaties**
+### 🎯 **Documentanalyse Optimalisaties**
 ```
 🧠 Gemini 2.5 Flash: Beste balans snelheid & kwaliteit (standaard)
 ⚡ Streaming responses voor real-time feedback
-🔍 Keyword extraction voor Canvas-specifieke termen
+🔍 Keyword extraction voor document-specifieke termen
 📊 Content prioritering op basis van zoektermen
-🎯 Instructional content detection
+🎯 Intelligente content detectie
 📝 Stap-voor-stap procedure herkenning
 ```
 
 ### 📁 **Dropbox File Management**
-- **Visual File Manager**: Overzicht van alle gevonden handleidingen
+- **Visual File Manager**: Overzicht van alle gevonden documenten
 - **Automatic Refresh**: Ververs bestandslijst met één klik
 - **File Type Icons**: 📄 PDF, 📝 DOCX, 📋 TXT herkenning
 - **Size & Metadata**: Complete bestandsinformatie
@@ -155,6 +155,7 @@ npm run dev
     │       └── 📁 dropbox/
     │           ├── 🔍 search-files/route.ts    # Dropbox file search
     │           ├── 📄 get-file-content/route.ts # File download & parse
+    │           ├── 🧠 smart-search/route.ts    # Gemini 2.5 Pro Smart Search
     │           └── 🔐 auth/route.ts            # OAuth token exchange
     └── 🧩 components/
         ├── 🤖 CanvasCoach.tsx      # Main interface
@@ -177,6 +178,7 @@ npm run dev
 | `/api/dropbox/auth` | OAuth Token Exchange | `code`, `redirectUri` | Access Token |
 | `/api/dropbox/search-files` | Zoek Dropbox Bestanden | `accessToken`, `query` | File List |
 | `/api/dropbox/get-file-content` | Download & Parse | `accessToken`, `filePath` | Extracted Text |
+| `/api/dropbox/smart-search` | Gemini 2.5 Pro Smart Search | `accessToken`, `query`, `files` | Relevance Scored Results |
 
 ### 📊 **Supported File Formats**
 
@@ -192,9 +194,9 @@ npm run dev
 ```css
 /* globals.css - Pas het kleurenschema aan */
 :root {
-  --primary-color: #233975;     /* Canvas blauw */
-  --secondary-color: #eec434;   /* Canvas geel */
-  --dropbox-color: #0061FF;     /* Dropbox blauw */
+  --primary-color: #233975;     # Hoofdkleur
+  --secondary-color: #eec434;   # Accent kleur
+  --dropbox-color: #0061FF;     # Dropbox blauw
 }
 ```
 
@@ -264,17 +266,17 @@ NEXTAUTH_URL=https://your-domain.com       # Je productie URL
 
 ## 🎓 Educational Use Cases
 
-### 👨‍🏫 **Voor Docenten**
-- 📁 **Canvas handleidingen** centraal opslaan in Dropbox
+### 👨‍🏫 **Voor Professionals**
+- 📁 **Documenten** centraal opslaan in Dropbox
 - 🔍 **Instant zoeken** door alle documentatie
-- 📝 **Stap-voor-stap instructies** krijgen voor Canvas functies
-- 🎯 **Specifieke procedures** vinden zonder handmatig zoeken
+- 📝 **Stap-voor-stap instructies** krijgen uit procedures
+- 🎯 **Specifieke informatie** vinden zonder handmatig zoeken
 
-### 👩‍🎓 **Voor Studenten**
-- 📚 **Canvas hulp** op basis van officiële handleidingen
-- 🔍 **Snel antwoorden** vinden op Canvas vragen
-- 📱 **Mobile toegang** tot alle Canvas documentatie
-- 💡 **Contextuele hulp** bij Canvas problemen
+### 👩‍🎓 **Voor Gebruikers**
+- 📚 **Document hulp** op basis van eigen bestanden
+- 🔍 **Snel antwoorden** vinden in eigen content
+- 📱 **Mobile toegang** tot alle documentatie
+- 💡 **Contextuele hulp** bij specifieke problemen
 
 ### 🏫 **Institutionele Deployment**
 ```bash
@@ -282,7 +284,7 @@ NEXTAUTH_URL=https://your-domain.com       # Je productie URL
 GEMINI_API_KEY=shared_institutional_key
 NEXT_PUBLIC_DROPBOX_APP_KEY=institutional_app_key
 DROPBOX_APP_SECRET=institutional_app_secret
-CANVAS_INSTITUTION=your_institution_name
+ORGANIZATION_NAME=your_organization_name
 ```
 
 ## 🔒 Security & Privacy
@@ -316,9 +318,9 @@ npm run build && npm start
 
 ### 📈 **Feature Roadmap**
 - [ ] **Multi-Dropbox Accounts**: Support voor meerdere accounts
-- [ ] **Folder Organization**: Specifieke Canvas folders
+- [ ] **Folder Organization**: Specifieke folders
 - [ ] **Real-time Sync**: Live updates van Dropbox changes
-- [ ] **Collaborative Features**: Team Canvas documentatie
+- [ ] **Collaborative Features**: Team documentatie
 - [ ] **Analytics Dashboard**: Usage insights
 - [ ] **Advanced Search**: Semantic search in documents
 
@@ -335,20 +337,20 @@ npm run build && npm start
 - [Netlify Deployment](https://netlify.com) - Hosting platform
 
 ### 💡 **Community**
-- [GitHub Repository](https://github.com/TomNaberink/canvas-coach-dropbox)
-- [Issues & Feature Requests](https://github.com/TomNaberink/canvas-coach-dropbox/issues)
+- [GitHub Repository](https://github.com/TomNaberink/bmind-dropbox)
+- [Issues & Feature Requests](https://github.com/TomNaberink/bmind-dropbox/issues)
 - [Tom Naberink LinkedIn](https://linkedin.com/in/tomnaberink) - Direct contact
 
 ---
 
-## 🎉 **Ready to Transform Canvas Education?**
+## 🎉 **Ready to Transform Document Analysis?**
 
-Deze template geeft je **alles** wat je nodig hebt om geavanceerde AI-applicaties te bouwen voor Canvas LMS ondersteuning. Van simpele vragen beantwoorden tot complexe multi-document analyse - de mogelijkheden zijn eindeloos!
+Deze template geeft je **alles** wat je nodig hebt om geavanceerde AI-applicaties te bouwen voor documentanalyse en kennisextractie. Van simpele vragen beantwoorden tot complexe multi-document analyse - de mogelijkheden zijn eindeloos!
 
 **💜 Gemaakt met passie door Tom Naberink**  
-**🚀 Deploy nu en start met bouwen aan de toekomst van Canvas onderwijs!**
+**🚀 Deploy nu en start met bouwen aan de toekomst van documentanalyse!**
 
 ---
 
-*Versie 2.1 - Canvas Coach met Dropbox Integration + OAuth Scope Fix*  
+*Versie 2.1 - BMaind met Dropbox Integration + OAuth Scope Fix*  
 *Last updated: December 2024*

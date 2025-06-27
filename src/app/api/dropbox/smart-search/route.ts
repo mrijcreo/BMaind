@@ -89,14 +89,14 @@ export async function POST(request: NextRequest) {
         console.log(`🏆 Gemini 2.5 Pro analyseert: ${file.name}`)
         
         const advancedSearchPrompt = `
-Je bent een expert Canvas LMS consultant met diepgaande kennis van onderwijstechnologie. Voer een geavanceerde analyse uit van het volgende document om de gebruikersvraag te beantwoorden.
+Je bent een expert documentanalyse consultant met diepgaande kennis van informatieextractie en contentanalyse. Voer een geavanceerde analyse uit van het volgende document om de gebruikersvraag te beantwoorden.
 
 GEBRUIKERSVRAAG: "${query}"
 
 DOCUMENT INFORMATIE:
 - Bestandsnaam: ${file.name}
 - Grootte: ${file.content?.length || 0} karakters
-- Type: Canvas LMS documentatie
+- Type: Documentatie/Informatie
 
 DOCUMENT INHOUD:
 ${file.content}
@@ -105,48 +105,48 @@ GEAVANCEERDE ANALYSE INSTRUCTIES:
 1. DIEPGAANDE RELEVANTIE ANALYSE:
    - Analyseer niet alleen directe matches, maar ook conceptuele verbanden
    - Zoek naar impliciete informatie die relevant kan zijn
-   - Overweeg context en gerelateerde Canvas functionaliteiten
+   - Overweeg context en gerelateerde onderwerpen
    - Geef een relevantiescore van 0-100 met gedetailleerde redenering
 
 2. INTELLIGENTE SECTIE EXTRACTIE:
    - Identificeer de 3 meest waardevolle secties (max 300 woorden elk)
-   - Prioriteer stap-voor-stap instructies, configuratie-instellingen, en praktische tips
-   - Behoud belangrijke details zoals menu-paden, button namen, en specifieke waarden
+   - Prioriteer stap-voor-stap instructies, procedures, en praktische informatie
+   - Behoud belangrijke details zoals specifieke waarden, namen, en configuraties
 
 3. EXPERTANALYSE:
    - Maak een professionele samenvatting van hoe dit document de vraag beantwoordt
    - Identificeer de belangrijkste actionable insights
    - Geef een confidence score (0-100) voor de betrouwbaarheid van de informatie
 
-4. CANVAS LMS EXPERTISE:
-   - Herken Canvas-specifieke terminologie en functionaliteiten
-   - Verstaan de context van onderwijsprocessen en workflows
+4. DOCUMENTANALYSE EXPERTISE:
+   - Herken belangrijke terminologie en concepten
+   - Verstaan de context van procedures en workflows
    - Identificeer best practices en potentiële valkuilen
 
 Antwoord in dit EXACTE JSON formaat (geen markdown, alleen pure JSON):
 {
   "relevanceScore": [getal 0-100],
   "confidence": [getal 0-100],
-  "reasoning": "Gedetailleerde uitleg waarom dit document wel/niet relevant is, inclusief specifieke Canvas concepten die worden behandeld",
+  "reasoning": "Gedetailleerde uitleg waarom dit document wel/niet relevant is, inclusief specifieke concepten die worden behandeld",
   "relevantSections": [
     "Meest relevante sectie 1 met volledige context en details...",
     "Meest relevante sectie 2 met stap-voor-stap instructies...",
     "Meest relevante sectie 3 met configuratie-informatie..."
   ],
-  "summary": "Professionele samenvatting van hoe dit document bijdraagt aan het beantwoorden van de vraag, inclusief specifieke Canvas functionaliteiten",
+  "summary": "Professionele samenvatting van hoe dit document bijdraagt aan het beantwoorden van de vraag, inclusief specifieke functionaliteiten",
   "keyPoints": [
-    "Specifiek actionable punt 1 met Canvas context",
-    "Specifiek actionable punt 2 met menu-paden of instellingen", 
+    "Specifiek actionable punt 1 met context",
+    "Specifiek actionable punt 2 met procedures of instellingen", 
     "Specifiek actionable punt 3 met best practices",
     "Specifiek actionable punt 4 met waarschuwingen of tips",
-    "Specifiek actionable punt 5 met gerelateerde functionaliteiten"
+    "Specifiek actionable punt 5 met gerelateerde informatie"
   ]
 }
 
 BELANGRIJKE OPMERKINGEN:
 - Als het document NIET relevant is, geef dan relevanceScore: 0, confidence: 100, en leg uit waarom
-- Voor relevante documenten, wees specifiek over Canvas menu's, buttons, en workflows
-- Gebruik professionele onderwijstechnologie terminologie
+- Voor relevante documenten, wees specifiek over procedures, instellingen, en workflows
+- Gebruik professionele terminologie
 - Focus op praktische, implementeerbare informatie
 `
 
@@ -204,7 +204,7 @@ BELANGRIJKE OPMERKINGEN:
           
           // Fallback: probeer een eenvoudigere analyse
           try {
-            const fallbackPrompt = `Analyseer dit Canvas document voor de vraag "${query}". Geef alleen een relevantiescore 0-100: ${file.content?.substring(0, 1000)}`
+            const fallbackPrompt = `Analyseer dit document voor de vraag "${query}". Geef alleen een relevantiescore 0-100: ${file.content?.substring(0, 1000)}`
             const fallbackResult = await model.generateContent(fallbackPrompt)
             const fallbackText = await fallbackResult.response.text()
             const scoreMatch = fallbackText.match(/(\d+)/);
