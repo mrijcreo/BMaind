@@ -31,9 +31,9 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString()
     })
 
-    // Reduced timeout to prevent code expiration
+    // Increased timeout to prevent code expiration
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 7000) // 7 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 9000) // 9 second timeout
 
     try {
       // Exchange code for access token immediately
