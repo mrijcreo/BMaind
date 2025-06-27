@@ -23,6 +23,7 @@ interface ChatMessage {
     path?: string
     snippet?: string
     relevanceScore?: number
+    confidence?: number
   }>
 }
 
@@ -32,6 +33,8 @@ interface SmartSearchResult {
   relevantSections: string[]
   summary: string
   keyPoints: string[]
+  reasoning: string
+  confidence: number
 }
 
 interface DropboxChatInterfaceProps {
@@ -46,6 +49,7 @@ export default function DropboxChatInterface({ dropboxFiles, accessToken }: Drop
   const [isStreaming, setIsStreaming] = useState(false)
   const [streamingMessage, setStreamingMessage] = useState('')
   const [isSmartSearching, setIsSmartSearching] = useState(false)
+  const [searchMetadata, setSearchMetadata] = useState<any>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const currentResponseRef = useRef<HTMLDivElement>(null)
@@ -61,11 +65,11 @@ export default function DropboxChatInterface({ dropboxFiles, accessToken }: Drop
     return `alle ${count} bestanden`
   }
 
-  // Smart Search met Gemini 2.5 Flash
+  // Smart Search met Gemini 2.5 Pro
   const performSmartSearch = async (userQuestion: string): Promise<SmartSearchResult[]> => {
     if (dropboxFiles.length === 0 || !accessToken) return []
 
-    console.log('🔍 SMART SEARCH: Starting Gemini 2.5 Flash search...')
+    console.log('🏆 SMART SEARCH: Starting Gemini 2.5 Pro search...')
     setIsSmartSearching(true)
 
     try {
@@ -88,14 +92,21 @@ export default function DropboxChatInterface({ dropboxFiles, accessToken }: Drop
       const data = await response.json()
       
       if (data.success) {
-        console.log(`🎯 Smart Search resultaten: ${data.relevantFiles} van ${data.totalFiles} bestanden relevant`)
+        console.log(`🎯 Gemini 2.5 Pro Search resultaten:`, {
+          relevantFiles: data.relevantFiles,
+          totalFiles: data.totalFiles,
+          averageConfidence: data.metadata?.averageConfidence,
+          highestScore: data.metadata?.highestScore
+        })
+        
+        setSearchMetadata(data.metadata)
         return data.results || []
       } else {
         throw new Error(data.error || 'Smart search failed')
       }
 
     } catch (error) {
-      console.error('Smart search error:', error)
+      console.error('Gemini 2.5 Pro Smart search error:', error)
       return []
     } finally {
       setIsSmartSearching(false)
@@ -107,13 +118,15 @@ export default function DropboxChatInterface({ dropboxFiles, accessToken }: Drop
     if (searchResults.length === 0) return ''
 
     let context = `
-🧠 GEMINI 2.5 FLASH SMART SEARCH RESULTATEN
+🏆 GEMINI 2.5 PRO SMART SEARCH RESULTATEN
 VRAAG: ${userQuestion}
 GEVONDEN: ${searchResults.length} relevante documenten uit ${dropboxFiles.length} bestanden
+GEMIDDELDE CONFIDENCE: ${searchMetadata?.averageConfidence || 0}%
+HOOGSTE RELEVANTIE SCORE: ${searchMetadata?.highestScore || 0}
 
-INSTRUCTIE: Gebruik de onderstaande smart search resultaten om een uitgebreid en accuraat antwoord te geven. Elke sectie is al door Gemini geanalyseerd op relevantie.
+INSTRUCTIE: Gebruik de onderstaande Gemini 2.5 Pro smart search resultaten om een uitgebreid, accuraat en professioneel antwoord te geven. Elke sectie is geanalyseerd door Gemini 2.5 Pro met geavanceerde reasoning en Canvas LMS expertise.
 
-=== SMART SEARCH RESULTATEN ===
+=== GEMINI 2.5 PRO SMART SEARCH RESULTATEN ===
 `
 
     searchResults.forEach((result, index) => {
@@ -121,14 +134,17 @@ INSTRUCTIE: Gebruik de onderstaande smart search resultaten om een uitgebreid en
 
 📄 DOCUMENT ${index + 1}: ${result.file.name}
 🎯 RELEVANTIE SCORE: ${result.relevanceScore}/100
-📝 SAMENVATTING: ${result.summary}
+🔍 CONFIDENCE: ${result.confidence}%
+🧠 GEMINI 2.5 PRO REASONING: ${result.reasoning}
 
-🔍 BELANGRIJKSTE PUNTEN:
+📝 EXPERT SAMENVATTING: ${result.summary}
+
+🔍 BELANGRIJKSTE CANVAS LMS PUNTEN:
 ${result.keyPoints.map(point => `• ${point}`).join('\n')}
 
-📋 RELEVANTE SECTIES:
+📋 MEEST RELEVANTE SECTIES (door Gemini 2.5 Pro geselecteerd):
 ${result.relevantSections.map((section, i) => `
---- Sectie ${i + 1} ---
+--- Expert Sectie ${i + 1} ---
 ${section}
 `).join('\n')}
 `
@@ -136,10 +152,19 @@ ${section}
 
     context += `
 
-=== EINDE SMART SEARCH RESULTATEN ===
+=== EINDE GEMINI 2.5 PRO SMART SEARCH RESULTATEN ===
 
-Geef nu een uitgebreid antwoord op de vraag: "${userQuestion}"
-Gebruik de informatie uit de smart search resultaten en verwijs naar specifieke documenten waar relevant.
+Geef nu een uitgebreid, professioneel Canvas LMS expert antwoord op de vraag: "${userQuestion}"
+
+ANTWOORD VEREISTEN:
+- Gebruik de Gemini 2.5 Pro geanalyseerde informatie uit de smart search resultaten
+- Verwijs naar specifieke documenten met hun confidence scores waar relevant
+- Geef stap-voor-stap instructies waar mogelijk
+- Gebruik professionele Canvas LMS terminologie
+- Spreek over "cursisten" in plaats van "studenten"
+- Vermeld specifieke menu-paden, button namen, en instellingen waar beschikbaar
+- Geef praktische tips en best practices
+- Waarschuw voor potentiële valkuilen of belangrijke overwegingen
 `
 
     return context
@@ -165,7 +190,14 @@ Ik ben een professionele onderwijstechnologie-expert gespecialiseerd in Canvas L
 • 🔧 **Instellingen** - Configuratie en personalisatie
 • ⚙️ **Automatisering** - Standaardwaarden, bulk acties, workflows
 
-🧠 **Gemini 2.5 Flash Smart Search**: Ik doorzoek ${getFileCountText()} **intelligent** uit je Dropbox met geavanceerde AI die de inhoud begrijpt en analyseert!
+🏆 **Gemini 2.5 Pro Smart Search**: Ik doorzoek ${getFileCountText()} **met de meest geavanceerde AI** uit je Dropbox met superieure reasoning, Canvas LMS expertise en diepgaande content analyse!
+
+**Waarom Gemini 2.5 Pro?**
+• 🧠 **Superieure reasoning** - Begrijpt complexe Canvas workflows
+• 🎯 **Canvas LMS expertise** - Herkent onderwijscontext en terminologie  
+• 🔍 **Diepgaande analyse** - Vindt ook impliciete en gerelateerde informatie
+• 💡 **Confidence scoring** - Betrouwbaarheidsscores voor elk resultaat
+• ⚡ **Geavanceerde ranking** - Intelligente prioritering van resultaten
 
 Stel gerust je vraag! 🚀`,
         timestamp: new Date()
@@ -211,13 +243,13 @@ Stel gerust je vraag! 🚀`,
     try {
       let payload: any = {
         message: inputMessage.trim(),
-        aiModel: 'smart', // Gebruik Gemini 2.5 Flash
+        aiModel: 'pro', // Gebruik Gemini 2.5 Pro voor de response
         useGrounding: false
       }
 
-      // SMART SEARCH met Gemini 2.5 Flash
+      // SMART SEARCH met Gemini 2.5 Pro
       if (dropboxFiles.length > 0 && accessToken) {
-        console.log('🧠 Starting Gemini 2.5 Flash Smart Search...')
+        console.log('🏆 Starting Gemini 2.5 Pro Smart Search...')
         
         // Perform smart search
         const smartSearchResults = await performSmartSearch(inputMessage.trim())
@@ -225,34 +257,36 @@ Stel gerust je vraag! 🚀`,
         if (smartSearchResults.length > 0) {
           const smartContext = prepareSmartSearchContext(smartSearchResults, inputMessage.trim())
           
-          payload.message = `Je bent Canvas Coach Maike, een professionele Canvas LMS expert en coach. Beantwoord de volgende vraag op basis van de Gemini 2.5 Flash Smart Search resultaten uit Dropbox.
+          payload.message = `Je bent Canvas Coach Maike, een professionele Canvas LMS expert en coach. Beantwoord de volgende vraag op basis van de Gemini 2.5 Pro Smart Search resultaten uit Dropbox.
 
-🧠 SMART SEARCH INSTRUCTIES:
-- De onderstaande informatie is al door Gemini 2.5 Flash geanalyseerd op relevantie
-- Elke sectie heeft een relevantiescore en is specifiek geselecteerd voor deze vraag
-- Geef een uitgebreid, accuraat antwoord gebaseerd op deze smart search resultaten
-- Verwijs naar specifieke documenten waar relevant
+🏆 GEMINI 2.5 PRO SMART SEARCH INSTRUCTIES:
+- De onderstaande informatie is geanalyseerd door Gemini 2.5 Pro met geavanceerde reasoning
+- Elke sectie heeft een relevantiescore en confidence score van Gemini 2.5 Pro
+- Gebruik de expert reasoning en Canvas LMS context die Gemini 2.5 Pro heeft geïdentificeerd
+- Geef een uitgebreid, professioneel antwoord met specifieke Canvas instructies
+- Verwijs naar documenten met hun confidence scores waar relevant
 - Spreek over "cursisten" in plaats van "studenten"
 
 ${smartContext}`
 
-          console.log('🎯 Smart Search completed:', {
+          console.log('🎯 Gemini 2.5 Pro Smart Search completed:', {
             relevantFiles: smartSearchResults.length,
             totalFiles: dropboxFiles.length,
+            averageConfidence: searchMetadata?.averageConfidence,
             averageRelevance: smartSearchResults.reduce((sum, r) => sum + r.relevanceScore, 0) / smartSearchResults.length
           })
         } else {
           // Fallback to regular response if no relevant files found
           payload.message = `Je bent Canvas Coach Maike, een professionele Canvas LMS expert en coach. 
 
-De Gemini 2.5 Flash Smart Search heeft geen relevante informatie gevonden in de ${dropboxFiles.length} Dropbox documenten voor deze vraag: "${inputMessage.trim()}"
+De Gemini 2.5 Pro Smart Search heeft geen relevante informatie gevonden in de ${dropboxFiles.length} Dropbox documenten voor deze vraag: "${inputMessage.trim()}"
 
-Beantwoord de vraag op basis van je algemene Canvas LMS kennis. Spreek over "cursisten" in plaats van "studenten".
+Beantwoord de vraag op basis van je algemene Canvas LMS expertise. Spreek over "cursisten" in plaats van "studenten".
 
 VRAAG: ${inputMessage.trim()}`
         }
       } else {
-        payload.message = `Je bent Canvas Coach Maike, een professionele Canvas LMS expert en coach. Beantwoord de volgende Canvas-vraag op basis van je kennis. Spreek over "cursisten" in plaats van "studenten".
+        payload.message = `Je bent Canvas Coach Maike, een professionele Canvas LMS expert en coach. Beantwoord de volgende Canvas-vraag op basis van je expertise. Spreek over "cursisten" in plaats van "studenten".
 
 VRAAG: ${inputMessage.trim()}`
       }
@@ -356,7 +390,7 @@ VRAAG: ${inputMessage.trim()}`
       let userFriendlyMessage = 'Er is een onbekende fout opgetreden'
       
       if (error.name === 'AbortError') {
-        userFriendlyMessage = 'Verzoek geannuleerd door timeout. De smart search duurde te lang.'
+        userFriendlyMessage = 'Verzoek geannuleerd door timeout. De Gemini 2.5 Pro smart search duurde te lang.'
       } else if (error.message.includes('Failed to fetch')) {
         userFriendlyMessage = 'Netwerkfout. Controleer je internetverbinding en probeer opnieuw.'
       } else if (error.message.includes('te lang')) {
@@ -368,7 +402,7 @@ VRAAG: ${inputMessage.trim()}`
       const errorMessage: ChatMessage = {
         id: `error_${Date.now()}`,
         type: 'assistant',
-        content: `❌ **Fout bij Gemini 2.5 Flash Smart Search**
+        content: `❌ **Fout bij Gemini 2.5 Pro Smart Search**
 
 ${userFriendlyMessage}
 
@@ -376,7 +410,8 @@ ${userFriendlyMessage}
 • Probeer het opnieuw
 • Herlaad de pagina als het probleem aanhoudt
 • Controleer je internetverbinding
-• Controleer je Dropbox verbinding`,
+• Controleer je Dropbox verbinding
+• Voor complexe vragen: probeer de vraag op te splitsen`,
         timestamp: new Date()
       }
       setMessages(prev => [...prev, errorMessage])
@@ -395,6 +430,7 @@ ${userFriendlyMessage}
 
   const clearChat = () => {
     setMessages([])
+    setSearchMetadata(null)
     setTimeout(() => {
       const welcomeMessage: ChatMessage = {
         id: 'welcome_new',
@@ -403,7 +439,7 @@ ${userFriendlyMessage}
 
 **Welke Canvas-vraag heb je en waar kan ik je bij helpen?**
 
-🧠 **Gemini 2.5 Flash Smart Search**: Ik doorzoek ${getFileCountText()} **intelligent** uit je Dropbox met geavanceerde AI!
+🏆 **Gemini 2.5 Pro Smart Search**: Ik doorzoek ${getFileCountText()} **met de meest geavanceerde AI** uit je Dropbox!
 
 Stel gerust je vraag! 🚀`,
         timestamp: new Date()
@@ -440,7 +476,7 @@ Stel gerust je vraag! 🚀`,
             <div>
               <h3 className="text-lg font-semibold" style={{color: '#233975'}}>Canvas Coach Maike Chat</h3>
               <p className="text-sm text-gray-600">
-                🧠 Gemini 2.5 Flash Smart Search in ${getFileCountText()} uit Dropbox
+                🏆 Gemini 2.5 Pro Smart Search in ${getFileCountText()} uit Dropbox
               </p>
             </div>
           </div>
@@ -475,14 +511,20 @@ Stel gerust je vraag! 🚀`,
                 <MarkdownRenderer content={message.content} />
               )}
               
-              {/* Show Dropbox sources */}
+              {/* Show Dropbox sources with enhanced metadata */}
               {message.sources && message.sources.length > 0 && (
                 <div className="mt-3 pt-3 border-t border-gray-200">
-                  <p className="text-xs text-gray-500 mb-2">🧠 Smart Search bronnen uit Dropbox:</p>
+                  <p className="text-xs text-gray-500 mb-2">🏆 Gemini 2.5 Pro Smart Search bronnen uit Dropbox:</p>
+                  {searchMetadata && (
+                    <div className="mb-2 text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded">
+                      📊 Avg. Confidence: {searchMetadata.averageConfidence}% | 🎯 Hoogste Score: {searchMetadata.highestScore}
+                    </div>
+                  )}
                   <div className="flex flex-wrap gap-1">
                     {message.sources.slice(0, 3).map((source, index) => (
-                      <span key={index} className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                      <span key={index} className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded">
                         {source.name}
+                        {source.confidence && ` (${source.confidence}%)`}
                       </span>
                     ))}
                     {message.sources.length > 3 && (
@@ -501,7 +543,7 @@ Stel gerust je vraag! 🚀`,
                   hour: '2-digit', 
                   minute: '2-digit' 
                 })}
-                <span className="ml-2">🧠📁</span>
+                <span className="ml-2">🏆📁</span>
               </p>
             </div>
           </div>
@@ -517,9 +559,9 @@ Stel gerust je vraag! 🚀`,
                   <div className="w-2 h-2 rounded-full animate-bounce" style={{backgroundColor: '#7c3aed', animationDelay: '0.1s'}}></div>
                   <div className="w-2 h-2 rounded-full animate-bounce" style={{backgroundColor: '#7c3aed', animationDelay: '0.2s'}}></div>
                 </div>
-                <span className="text-sm font-medium">🧠 Gemini 2.5 Flash analyseert alle Dropbox bestanden...</span>
+                <span className="text-sm font-medium">🏆 Gemini 2.5 Pro analyseert alle Dropbox bestanden...</span>
               </div>
-              <p className="text-xs mt-1 ml-8">Smart Search doorzoekt inhoud van {dropboxFiles.length} documenten</p>
+              <p className="text-xs mt-1 ml-8">Geavanceerde AI reasoning door {dropboxFiles.length} documenten met Canvas LMS expertise</p>
             </div>
           </div>
         )}
@@ -535,7 +577,7 @@ Stel gerust je vraag! 🚀`,
                   <div className="w-2 h-2 rounded-full animate-bounce" style={{backgroundColor: '#233975', animationDelay: '0.1s'}}></div>
                   <div className="w-2 h-2 rounded-full animate-bounce" style={{backgroundColor: '#233975', animationDelay: '0.2s'}}></div>
                 </div>
-                <span className="text-xs text-gray-500 ml-2">🧠 Smart Search response...</span>
+                <span className="text-xs text-gray-500 ml-2">🏆 Gemini 2.5 Pro response...</span>
               </div>
             </div>
           </div>
@@ -551,7 +593,7 @@ Stel gerust je vraag! 🚀`,
                   <div className="w-2 h-2 rounded-full animate-bounce" style={{backgroundColor: '#233975', animationDelay: '0.1s'}}></div>
                   <div className="w-2 h-2 rounded-full animate-bounce" style={{backgroundColor: '#233975', animationDelay: '0.2s'}}></div>
                 </div>
-                <span className="text-sm text-gray-600">🧠 Canvas Coach Maike denkt na...</span>
+                <span className="text-sm text-gray-600">🏆 Canvas Coach Maike denkt na met Gemini 2.5 Pro...</span>
               </div>
             </div>
           </div>
@@ -582,13 +624,13 @@ Stel gerust je vraag! 🚀`,
             className="px-6 py-3 text-white rounded-xl hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
             style={{backgroundColor: '#233975', '--tw-ring-color': '#233975'} as any}
           >
-            {isSmartSearching ? '🧠' : isLoading ? '🔍' : '🚀'}
+            {isSmartSearching ? '🏆' : isLoading ? '🔍' : '🚀'}
           </button>
         </div>
         
         <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
           <span>
-            🧠 **GEMINI 2.5 FLASH SMART SEARCH** door ${getFileCountText()} met AI content analyse
+            🏆 **GEMINI 2.5 PRO SMART SEARCH** door ${getFileCountText()} met superieure AI reasoning & Canvas expertise
           </span>
           <span>Enter = verzenden • Shift+Enter = nieuwe regel</span>
         </div>
