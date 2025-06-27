@@ -73,7 +73,7 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
       name: '4. OAuth URL Generatie',
       status: 'pending',
       message: 'Genereren van Dropbox OAuth autorisatie URL...',
-      details: 'Maken van de juiste OAuth URL met redirect URI',
+      details: 'Maken van de juiste OAuth URL met redirect URI en alle vereiste scopes',
       solution: 'Controleer redirect URI configuratie in Dropbox App Console'
     },
     {
@@ -97,7 +97,7 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
       name: '7. API Permissions Check',
       status: 'pending',
       message: 'Controleren van Dropbox API permissions...',
-      details: 'Verificatie van files.metadata.read en files.content.read permissions',
+      details: 'Verificatie van files.metadata.read, files.content.read en account_info.read permissions',
       solution: 'Voeg de juiste permissions toe in Dropbox App Console'
     },
     {
@@ -194,11 +194,12 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
     await updateDiagnosticStep('oauth-url-generation', 'running', 'Genereren van OAuth URL...')
     
     try {
-      const authUrl = `https://www.dropbox.com/oauth2/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=files.metadata.read files.content.read`
+      // Updated scope to include account_info.read
+      const authUrl = `https://www.dropbox.com/oauth2/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=files.metadata.read files.content.read account_info.read`
       
       await updateDiagnosticStep('oauth-url-generation', 'success',
         '✅ OAuth URL succesvol gegenereerd',
-        `Redirect URI: ${redirectUri}\nScopes: files.metadata.read, files.content.read\n\nOAuth URL: ${authUrl}`
+        `Redirect URI: ${redirectUri}\nScopes: files.metadata.read, files.content.read, account_info.read\n\nOAuth URL: ${authUrl}`
       )
     } catch (error) {
       await updateDiagnosticStep('oauth-url-generation', 'error',
@@ -289,11 +290,20 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
             '✅ API permissions zijn correct geconfigureerd'
           )
         } else {
-          await updateDiagnosticStep('api-permissions', 'error',
-            'API permissions fout',
-            `HTTP ${accountResponse.status}`,
-            'Controleer je Dropbox App permissions in de App Console'
-          )
+          const errorText = await accountResponse.text()
+          if (errorText.includes('missing_scope') && errorText.includes('account_info.read')) {
+            await updateDiagnosticStep('api-permissions', 'error',
+              '❌ Ontbrekende account_info.read permission',
+              'De app heeft geen toestemming om account informatie te lezen',
+              'Verbreek de verbinding en verbind opnieuw om de nieuwe permissions te krijgen'
+            )
+          } else {
+            await updateDiagnosticStep('api-permissions', 'error',
+              'API permissions fout',
+              `HTTP ${accountResponse.status}: ${errorText}`,
+              'Controleer je Dropbox App permissions in de App Console'
+            )
+          }
         }
       } catch (error) {
         await updateDiagnosticStep('api-permissions', 'error',
@@ -388,7 +398,7 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
     setConfigurationError(null)
     setIsAutoRetrying(false)
 
-    // Dropbox OAuth URL with correct redirect URI
+    // Dropbox OAuth URL with correct redirect URI and updated scopes
     const clientId = process.env.NEXT_PUBLIC_DROPBOX_APP_KEY
     if (!clientId) {
       setError('Dropbox App Key niet geconfigureerd. Voeg NEXT_PUBLIC_DROPBOX_APP_KEY toe aan environment variables.')
@@ -397,10 +407,12 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
     }
 
     const redirectUri = getRedirectUri()
-    const authUrl = `https://www.dropbox.com/oauth2/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=files.metadata.read files.content.read`
+    // Updated scope to include account_info.read
+    const authUrl = `https://www.dropbox.com/oauth2/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=files.metadata.read files.content.read account_info.read`
 
     console.log('🔗 Starting Dropbox OAuth flow:', {
       redirectUri,
+      scopes: 'files.metadata.read files.content.read account_info.read',
       timestamp: new Date().toISOString(),
       attempt: retryCount + 1
     })
@@ -452,7 +464,8 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
             step2: 'Selecteer je app',
             step3: 'Controleer App Key en App Secret',
             step4: `Voeg deze redirect URI toe: ${redirectUri}`,
-            step5: 'Zorg dat "Full Dropbox" toegang is geselecteerd'
+            step5: 'Zorg dat "Full Dropbox" toegang is geselecteerd',
+            step6: 'Voeg deze permissions toe: files.metadata.read, files.content.read, account_info.read'
           })
         } else if (event.data.errorType === 'timeout') {
           setError('⏰ Verbinding time-out. Controleer je internetverbinding en probeer opnieuw.')
@@ -516,7 +529,7 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
         window.removeEventListener('message', messageListener)
         setError('Verbinding time-out. Het autorisatieproces duurde te lang. Probeer opnieuw en klik sneller op "Toestaan".')
       }
-    }, 90000) // Reduced to 90 seconds
+    }, 60000) // Reduced to 60 seconds to prevent code expiration
   }
 
   const handleAuthSuccess = async (token: string) => {
@@ -804,6 +817,7 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
                   <ul className="ml-4 mt-1 space-y-1">
                     <li>• files.metadata.read</li>
                     <li>• files.content.read</li>
+                    <li>• <strong>account_info.read</strong> (nieuw vereist)</li>
                   </ul>
                 </li>
                 <li>Herverbind je Dropbox account in deze applicatie</li>
@@ -922,7 +936,7 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
                 <li>Ga naar <a href="https://www.dropbox.com/developers/apps" target="_blank" rel="noopener noreferrer" className="underline">Dropbox App Console</a></li>
                 <li>Selecteer je app</li>
                 <li>Zorg dat <strong>"Full Dropbox"</strong> toegang is geselecteerd</li>
-                <li>Controleer permissions: files.metadata.read, files.content.read</li>
+                <li>Controleer permissions: files.metadata.read, files.content.read, <strong>account_info.read</strong></li>
                 <li>Klik op "Verbreek verbinding" en verbind opnieuw</li>
               </ol>
             </div>

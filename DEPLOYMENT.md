@@ -26,11 +26,36 @@ Ga direct naar je Netlify dashboard en controleer:
 - **Value:** jouw_echte_gemini_api_key
 - **Scope:** Alle scopes
 
+**DROPBOX INTEGRATIE:**
+- **Key:** `NEXT_PUBLIC_DROPBOX_APP_KEY`
+- **Value:** jouw_dropbox_app_key
+- **Scope:** Alle scopes
+
+- **Key:** `DROPBOX_APP_SECRET`
+- **Value:** jouw_dropbox_app_secret
+- **Scope:** Alle scopes
+
 🔑 **API Keys verkrijgen:**
 - [Gemini API Key](https://makersuite.google.com/app/apikey) - Google AI Studio (alle functionaliteiten)
+- [Dropbox App Console](https://www.dropbox.com/developers/apps) - Dropbox integratie
 
-### Stap 4: Redeploy & Test
-Na het instellen van de API keys:
+### Stap 4: Dropbox App Configuratie (KRITISCH!)
+**Ga naar [Dropbox App Console](https://www.dropbox.com/developers/apps):**
+
+1. **Selecteer je app** (of maak nieuwe aan)
+2. **Settings tab:**
+   - **App folder of Full Dropbox:** Kies "Full Dropbox" voor toegang tot alle bestanden
+   - **Redirect URIs:** Voeg toe: `https://your-netlify-domain.netlify.app/dropbox-callback`
+3. **Permissions tab:**
+   - ✅ `files.metadata.read` - Voor bestandslijsten
+   - ✅ `files.content.read` - Voor bestandsinhoud
+   - ✅ `account_info.read` - **NIEUW VEREIST** voor account verificatie
+4. **Sla wijzigingen op**
+
+⚠️ **BELANGRIJK:** De `account_info.read` permission is nieuw vereist sinds de laatste update. Zonder deze permission krijg je "missing_scope" errors.
+
+### Stap 5: Redeploy & Test
+Na het instellen van alle API keys en Dropbox configuratie:
 - **Deploys tab → Trigger deploy** 
 - **Test alle functionaliteiten** (zie Post-Deploy Checklist hieronder)
 
@@ -55,6 +80,7 @@ Voor nieuwe TTS en streaming features:
 - **Audio transcription:** Max 60MB (praktische limiet, Gemini ondersteunt tot 2GB)
 - **Document processing:** Max 10MB aanbevolen
 - **TTS audio generation:** ~5MB WAV files gemiddeld
+- **Dropbox file access:** Max 150MB per bestand (Dropbox API limiet)
 
 ## 🔧 Complete Troubleshooting Guide
 
@@ -75,6 +101,24 @@ Voor nieuwe TTS en streaming features:
 2. Geen extra spaties in value
 3. Redeploy na wijzigen
 4. Test API key in [Google AI Studio](https://makersuite.google.com/app/apikey)
+
+#### Probleem: Dropbox "missing_scope" Error
+**Symptomen:** "missing_scope/account_info.read" error bij Dropbox verbinding
+**Oplossing:**
+1. Ga naar [Dropbox App Console](https://www.dropbox.com/developers/apps)
+2. Selecteer je app → Permissions tab
+3. Voeg `account_info.read` permission toe
+4. Sla op en herverbind je Dropbox account in de app
+5. **BELANGRIJK:** Bestaande gebruikers moeten hun Dropbox verbinding verbreken en opnieuw verbinden
+
+#### Probleem: Dropbox "invalid_grant" Error
+**Symptomen:** "code doesn't exist or has expired" tijdens OAuth
+**Oplossing:**
+1. Dit is meestal een timing probleem
+2. Klik direct op "Toestaan" in het Dropbox popup venster
+3. Zorg voor stabiele internetverbinding
+4. Probeer opnieuw als de code verlopen is
+5. Check dat redirect URI correct is ingesteld in Dropbox App Console
 
 #### Probleem: TTS Functionaliteit Werkt Niet
 **Symptomen:** "Failed to generate TTS" of geen audio output
@@ -131,6 +175,14 @@ Voor nieuwe TTS en streaming features:
 2. Check HTTPS (vereist voor microphone access)
 3. Browser permissions: Microphone access toestaan
 
+#### Dropbox Popup Geblokkeerd
+**Symptomen:** "Popup geblokkeerd door browser" error
+**Oplossing:**
+1. Sta popups toe voor je Netlify domain
+2. Test in incognito/private mode
+3. Disable popup blockers tijdelijk
+4. Gebruik desktop browser voor eerste verbinding
+
 ### 🔄 API & Function Issues
 
 #### Build Faalt - Dependency Errors
@@ -169,6 +221,14 @@ Voor nieuwe TTS en streaming features:
 2. Max 60MB per audio bestand (praktische limiet)
 3. Ondersteunde formaten: JPG, PNG, GIF, WebP, BMP
 
+#### Dropbox File Access Denied
+**Symptomen:** "App folder" errors of geen bestanden gevonden
+**Oplossing:**
+1. Check Dropbox App Console → Settings
+2. Zorg dat "Full Dropbox" is geselecteerd (niet "App folder")
+3. Herverbind Dropbox account na wijziging
+4. Test met bestanden in root directory eerst
+
 ## 📊 Monitoring & Performance
 
 ### Build Log Analysis
@@ -178,7 +238,7 @@ Voor nieuwe TTS en streaming features:
 ✅ "Build command: npm run build"
 ✅ "Dependencies installed successfully"  
 ✅ "Next.js compilation complete"
-✅ "5 serverless functions created"        # Updated count
+✅ "6 serverless functions created"        # Updated count (inclusief Dropbox endpoints)
 ✅ "Site deploy completed"
 ```
 
@@ -189,6 +249,7 @@ Voor nieuwe TTS en streaming features:
 ❌ "Function build failed"              # Kritisch - check logs
 ❌ "Environment variable missing"       # Kritisch - fix immediately
 ❌ "TTS endpoint build failed"          # Kritisch - check Gemini API
+❌ "Dropbox auth endpoint failed"       # Kritisch - check Dropbox credentials
 ```
 
 ### Function Performance Monitoring
@@ -203,6 +264,9 @@ Gemini TTS Generation:       5-15 seconden
 Audio transcription:         5-30 seconden (afhankelijk van file size)
 Document processing:         1-5 seconden
 Image upload:               1-3 seconden
+Dropbox OAuth:              2-5 seconden
+Dropbox file search:        3-10 seconden (afhankelijk van aantal bestanden)
+Dropbox file download:      2-15 seconden (afhankelijk van bestandsgrootte)
 ```
 
 ## 🎯 Post-Deploy Checklist
@@ -223,7 +287,7 @@ Image upload:               1-3 seconden
 11. **Copy/paste images** → Clipboard API werkt
 12. **Mobile responsive** → Touch interfaces werken
 
-### ✅ NEW: TTS & Export Features
+### ✅ TTS & Export Features
 13. **Microsoft TTS** → Standaard TTS engine werkt
 14. **TTS Speed Control** → 4 snelheden (0.75x-2.0x) werken
 15. **Gemini TTS** → 30 stemmen + 7 emoties werken
@@ -231,43 +295,72 @@ Image upload:               1-3 seconden
 17. **Word Export** → AI responses exporteren naar Word
 18. **Copy to Clipboard** → One-click copy functionaliteit
 
+### ✅ NEW: Dropbox Integration Tests
+19. **Dropbox Connect Button** → OAuth popup opent correct
+20. **Dropbox Authorization** → Toestaan/Deny flow werkt
+21. **Token Exchange** → Callback page verwerkt code correct
+22. **File Discovery** → PDF/DOCX bestanden worden gevonden
+23. **File Content Reading** → Bestanden kunnen gedownload en geparsed worden
+24. **Search Functionality** → Zoeken door Dropbox content werkt
+25. **File Refresh** → Bestandslijst kan ververst worden
+26. **Disconnect/Reconnect** → Verbinding kan verbroken en hersteld worden
+
+### ✅ Complete Dropbox Workflow Test
+```
+Complete test scenario:
+1. Klik "Verbind met Dropbox"
+2. Autoriseer app in popup (klik direct "Toestaan")
+3. Wacht tot bestandslijst geladen is
+4. Upload een Canvas handleiding (PDF) naar Dropbox
+5. Klik "Ververs" om nieuwe bestanden te detecteren
+6. Stel vraag: "Hoe maak ik een assignment in Canvas?"
+7. Controleer dat antwoord gebaseerd is op Dropbox content
+8. Test TTS op het antwoord
+9. Export antwoord naar Word
+10. Test "Verbreek verbinding" en herverbind
+Verwacht: Volledig werkende Dropbox-geïntegreerde Canvas Coach
+```
+
 ### ✅ Multi-File + TTS Workflow Test
 ```
 Complete test scenario:
 1. Upload 2 afbeeldingen + 1 audio file + 1 PDF
-2. Selecteer alle bestanden in file manager
-3. Gebruik Smart model (standaard)  
-4. Vraag: "Analyseer en vergelijk deze bestanden"
-5. Wacht op streaming response
-6. Test TTS: ⚙️ → Microsoft TTS → 🔊 afspelen
-7. Test TTS: ⚙️ → Gemini TTS → kies stem/emotie → 🔊
-8. Export response naar Word
-9. Copy response naar clipboard
-Verwacht: Volledig werkende multi-modal AI workflow
+2. Verbind Dropbox en upload Canvas handleiding
+3. Selecteer alle bestanden in file manager
+4. Gebruik Smart model (standaard)  
+5. Vraag: "Analyseer deze bestanden en geef Canvas advies"
+6. Wacht op streaming response
+7. Test TTS: ⚙️ → Microsoft TTS → 🔊 afspelen
+8. Test TTS: ⚙️ → Gemini TTS → kies stem/emotie → 🔊
+9. Export response naar Word
+10. Copy response naar clipboard
+Verwacht: Volledig werkende multi-modal AI workflow met Dropbox integratie
 ```
 
 ### ✅ Internet Model Test
 ```
 Internet connectivity test:
 1. Selecteer Gemini 2.0 Flash (Internet model)
-2. Vraag: "Wat is het laatste nieuws over AI in Nederland?"
+2. Vraag: "Wat is het laatste nieuws over Canvas LMS updates?"
 3. Verwacht: Response met actuele informatie + bronvermelding
 4. Check: Google Search bronnen worden getoond
 5. Test TTS op internet response
+6. Combineer met Dropbox: "Vergelijk dit nieuws met mijn Canvas handleidingen"
 ```
 
 ## 🔄 Development & Update Workflow
 
 ### Voor Bolt.new Users
 1. **Modificeer code** in Bolt interface
-2. **Test lokaal** indien mogelijk (vooral nieuwe TTS features)
+2. **Test lokaal** indien mogelijk (vooral nieuwe Dropbox features)
 3. **Deploy** via "Deploy to Netlify" button
 4. **Check deployment logs** voor errors
-5. **Test TTS functionaliteit** na deployment
+5. **Test Dropbox functionaliteit** na deployment
+6. **Update Dropbox redirect URIs** als domain wijzigt
 
 ### Voor GitHub Users
 1. **Lokaal ontwikkelen** met `npm run dev`
-2. **Test alle features** voor commit (inclusief TTS)
+2. **Test alle features** voor commit (inclusief Dropbox OAuth flow)
 3. **Push naar GitHub** 
 4. **Automatische deploy** via Netlify GitHub integration
 
@@ -279,9 +372,11 @@ Internet connectivity test:
 3. Test functionality immediately
 4. Update team/documentation
 
-# Voor TTS testing:
-GEMINI_API_KEY=your_key_here     # Moet TTS ondersteunen
-OPENAI_API_KEY=optional_key      # Voor audio transcriptie
+# Voor Dropbox testing:
+GEMINI_API_KEY=your_key_here                    # Moet TTS ondersteunen
+NEXT_PUBLIC_DROPBOX_APP_KEY=your_app_key        # Dropbox App Console
+DROPBOX_APP_SECRET=your_app_secret              # Dropbox App Console (SECRET!)
+NEXTAUTH_URL=https://your-domain.netlify.app    # Voor OAuth redirects
 ```
 
 ## 🆘 Emergency Troubleshooting
@@ -306,6 +401,13 @@ OPENAI_API_KEY=optional_key      # Voor audio transcriptie
 3. Fallback to Microsoft TTS only
 4. Disable Gemini TTS temporarily
 
+# Dropbox integration down:
+1. Check Dropbox API status
+2. Verify app credentials in Dropbox Console
+3. Test OAuth flow in incognito mode
+4. Check redirect URI configuration
+5. Temporarily disable Dropbox features
+
 # Audio transcription down:
 1. Check OpenAI status/credits
 2. Test with smaller files
@@ -320,6 +422,13 @@ OPENAI_API_KEY=optional_key      # Voor audio transcriptie
 3. Consider Netlify Pro for higher limits
 4. Implement client-side loading states
 5. Test TTS generation times (should be < 15s)
+6. Monitor Dropbox API rate limits
+
+# Dropbox specific performance:
+1. Limit file search results (max 100 files)
+2. Cache file lists client-side
+3. Implement progressive loading for large file lists
+4. Use Dropbox delta API for incremental updates
 ```
 
 ## 🎛️ Advanced Configuration
@@ -330,6 +439,7 @@ OPENAI_API_KEY=optional_key      # Voor audio transcriptie
 3. **Update DNS** records
 4. **Enable HTTPS** (automatic with Netlify)
 5. **Test camera/voice/TTS** (HTTPS required voor alle features)
+6. **Update Dropbox redirect URI** naar nieuwe domain
 
 ### CDN & Performance
 ```bash
@@ -344,6 +454,7 @@ OPENAI_API_KEY=optional_key      # Voor audio transcriptie
 - Use WebP images where possible
 - Enable Netlify Analytics
 - Cache TTS audio responses client-side
+- Cache Dropbox file lists (with TTL)
 ```
 
 ### Security Headers
@@ -363,6 +474,14 @@ OPENAI_API_KEY=optional_key      # Voor audio transcriptie
     Access-Control-Allow-Origin = "*"
     Access-Control-Allow-Methods = "POST"
     Access-Control-Allow-Headers = "Content-Type"
+
+# Dropbox OAuth CORS headers:
+[[headers]]
+  for = "/api/dropbox/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "POST, GET"
+    Access-Control-Allow-Headers = "Content-Type, Authorization"
 ```
 
 ## 💡 Pro Tips & Best Practices
@@ -370,15 +489,17 @@ OPENAI_API_KEY=optional_key      # Voor audio transcriptie
 ### Cost Optimization
 - **Gemini API:** Free tier genereus, dan pay-per-use (TTS usage monitoren)
 - **OpenAI Whisper:** ~$0.006 per minuut audio
+- **Dropbox API:** Free tier 1000 requests/hour, dan pay-per-use
 - **Netlify:** Free tier 100GB bandwidth, 300 build minuten
-- **Monitor usage** via dashboards (let op TTS calls)
+- **Monitor usage** via dashboards (let op TTS calls en Dropbox API calls)
 
 ### User Experience
-- **Loading states:** Altijd tonen voor AI calls (2-30s) en TTS (5-15s)
+- **Loading states:** Altijd tonen voor AI calls (2-30s), TTS (5-15s), en Dropbox operations (2-10s)
 - **Error handling:** User-friendly messages
 - **Progressive enhancement:** Core werkt zonder JS
 - **Mobile first:** Touch-friendly interfaces
 - **TTS feedback:** Progress indicators voor audio generation
+- **Dropbox UX:** Clear connection status en file management
 
 ### Development Tips
 ```bash
@@ -395,6 +516,24 @@ cp .env.example .env.local     # Copy environment template
 # Test met korte teksten eerst
 # Check alle stemmen en emoties
 # Test audio playback op verschillende devices
+
+# Dropbox testing:
+# Test OAuth flow in verschillende browsers
+# Test met verschillende bestandstypen
+# Monitor API rate limits tijdens development
+# Use ngrok voor lokale OAuth testing
+```
+
+### Dropbox Development Setup
+```bash
+# Voor lokale Dropbox development:
+1. Install ngrok: npm install -g ngrok
+2. Start local server: npm run dev
+3. In nieuwe terminal: ngrok http 3000
+4. Copy ngrok HTTPS URL
+5. Add to Dropbox App Console redirect URIs: https://xxxxx.ngrok.io/dropbox-callback
+6. Test OAuth flow met ngrok URL
+7. Update .env.local: NEXTAUTH_URL=https://xxxxx.ngrok.io
 ```
 
 ## 🔗 Resources & Support
@@ -404,17 +543,20 @@ cp .env.example .env.local     # Copy environment template
 - [Netlify Functions](https://docs.netlify.com/functions/overview/) - Serverless deployment
 - [Gemini API](https://ai.google.dev/docs) - AI capabilities & TTS
 - [Gemini TTS Guide](https://ai.google.dev/api/generate-content#text-to-speech) - TTS specifieke documentatie
+- [Dropbox API v2](https://www.dropbox.com/developers/documentation/http/documentation) - Dropbox integratie
+- [Dropbox OAuth Guide](https://www.dropbox.com/developers/documentation/http/documentation#oauth2-authorize) - OAuth implementatie
 - [OpenAI Whisper](https://platform.openai.com/docs/guides/speech-to-text) - Audio transcription
 
 ### Community & Help
-- [GitHub Repository](https://github.com/TomNaberink/templateAPIinclcamera) - Source code & issues
+- [GitHub Repository](https://github.com/TomNaberink/canvas-coach-dropbox) - Source code & issues
 - [Netlify Community](https://community.netlify.com/) - Deployment help
 - [Next.js Discord](https://discord.gg/nextjs) - Technical support
+- [Dropbox Developers](https://www.dropbox.com/developers/support) - API support
 
 ### Emergency Contacts
 - **Netlify Support:** [netlify.com/support](https://netlify.com/support)
 - **Tom Naberink:** [LinkedIn](https://linkedin.com/in/tomnaberink) - Template creator
-- **GitHub Issues:** [Repository Issues](https://github.com/TomNaberink/templateAPIinclcamera/issues) - Bug reports
+- **GitHub Issues:** [Repository Issues](https://github.com/TomNaberink/canvas-coach-dropbox/issues) - Bug reports
 
 ## 🎉 Success Indicators
 
@@ -430,6 +572,10 @@ cp .env.example .env.local     # Copy environment template
 ✅ **Camera captures** work on HTTPS  
 ✅ **Mobile experience** is smooth  
 ✅ **Error handling** shows helpful messages  
+✅ **Dropbox connection** works end-to-end  
+✅ **Dropbox file discovery** finds Canvas documents  
+✅ **Dropbox search integration** provides relevant answers  
+✅ **OAuth flow** completes without errors  
 
 ### Performance Benchmarks:
 - **Homepage load:** < 3 seconden
@@ -440,17 +586,20 @@ cp .env.example .env.local     # Copy environment template
 - **Audio transcription:** 10-30 seconden (depending on length)
 - **Mobile camera:** < 2 seconden activation
 - **Word export:** < 3 seconden
+- **Dropbox OAuth:** < 10 seconden complete flow
+- **Dropbox file search:** < 5 seconden (< 50 files)
+- **Dropbox file download:** < 10 seconden (< 5MB files)
 
 ---
 
 ## 🚀 Ready for Production!
 
-Deze deployment guide dekt alle aspecten van de geavanceerde AI template inclusief de nieuwe TTS features, model selector, streaming responses en Word export functionaliteit. Van basis setup tot complexe troubleshooting - alles wat je nodig hebt voor een succesvolle productie deployment.
+Deze deployment guide dekt alle aspecten van de geavanceerde AI template inclusief de nieuwe Dropbox integratie, TTS features, model selector, streaming responses en Word export functionaliteit. Van basis setup tot complexe troubleshooting - alles wat je nodig hebt voor een succesvolle productie deployment met volledige Dropbox ondersteuning.
 
 **💜 Template gemaakt door Tom Naberink**  
 **🌐 Geoptimaliseerd voor Netlify + Bolt.new workflow**
 
 ---
 
-*Complete Deployment Guide v3.0 - Met TTS & Streaming Features*  
-*Last updated: December 2024* 
+*Complete Deployment Guide v3.1 - Met Dropbox Integration & OAuth Scope Fix*  
+*Last updated: December 2024*

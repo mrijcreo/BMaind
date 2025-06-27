@@ -60,7 +60,7 @@ Een geavanceerde Next.js template die **alles** biedt wat je nodig hebt voor inn
 2. Klik "Create app"
 3. Kies "Scoped access" → "Full Dropbox" → Geef je app een naam
 4. In App settings:
-   - **Permissions**: `files.metadata.read`, `files.content.read`
+   - **Permissions**: `files.metadata.read`, `files.content.read`, `account_info.read`
    - **Redirect URIs**: `http://localhost:3000/dropbox-callback` (en je productie URL)
 5. Noteer je **App key** en **App secret**
 
@@ -235,8 +235,8 @@ NEXTAUTH_URL=https://your-domain.com       # Je productie URL
 ### 📁 **Dropbox App Production Setup**
 1. **App Console** → Je app → Settings
 2. **Redirect URIs** toevoegen: `https://your-domain.com/dropbox-callback`
-3. **Status** → "Apply for production" (voor meer dan 500 users)
-4. **Permissions** controleren: `files.metadata.read`, `files.content.read`
+3. **Permissions** controleren: `files.metadata.read`, `files.content.read`, `account_info.read`
+4. **Status** → "Apply for production" (voor meer dan 500 users)
 
 ## 🚨 Troubleshooting & Common Issues
 
@@ -247,6 +247,7 @@ NEXTAUTH_URL=https://your-domain.com       # Je productie URL
 | `Redirect URI mismatch` | Wrong callback URL | Update Dropbox app settings |
 | `Access denied` | User cancelled | Retry connection process |
 | `Token exchange failed` | Wrong app secret | Check `DROPBOX_APP_SECRET` |
+| `Missing scope: account_info.read` | Ontbrekende permission | Voeg `account_info.read` toe aan Dropbox App permissions |
 
 ### 🔧 **File Processing Issues**
 | Problem | Solution |
@@ -349,5 +350,5 @@ Deze template geeft je **alles** wat je nodig hebt om geavanceerde AI-applicatie
 
 ---
 
-*Versie 2.0 - Canvas Coach met Dropbox Integration*  
+*Versie 2.1 - Canvas Coach met Dropbox Integration + OAuth Scope Fix*  
 *Last updated: December 2024*
