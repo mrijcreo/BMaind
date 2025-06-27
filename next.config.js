@@ -18,6 +18,12 @@ const nextConfig = {
       })
     );
 
+    // Externalize pdf-parse for server-side builds
+    if (isServer) {
+      config.externals = config.externals || [];
+      config.externals.push('pdf-parse');
+    }
+
     // Only apply fallbacks for client-side builds, not server-side
     if (!isServer) {
       config.resolve.fallback = {
@@ -28,9 +34,7 @@ const nextConfig = {
     }
     
     return config;
-  },
-  // Updated configuration for Next.js 15
-  serverExternalPackages: ['pdf-parse']
+  }
 }
 
 module.exports = nextConfig
