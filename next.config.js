@@ -18,12 +18,14 @@ const nextConfig = {
       })
     );
 
-    // Fallback for missing files in pdf-parse
-    config.resolve.fallback = {
-      ...config.resolve.fallback,
-      fs: false,
-      path: false,
-    };
+    // Only apply fallbacks for client-side builds, not server-side
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        path: false,
+      };
+    }
     
     return config;
   },
