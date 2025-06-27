@@ -21,6 +21,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Use the provided redirectUri or construct a default one
+    const finalRedirectUri = redirectUri || `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/dropbox-callback`
+
+    console.log('🔗 Token exchange request:', {
+      clientId: clientId.substring(0, 8) + '...',
+      redirectUri: finalRedirectUri,
+      codeLength: code.length
+    })
+
     // Add timeout to prevent hanging requests
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
@@ -37,7 +46,7 @@ export async function POST(request: NextRequest) {
           grant_type: 'authorization_code',
           client_id: clientId,
           client_secret: clientSecret,
-          redirect_uri: redirectUri || `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/dropbox-callback`
+          redirect_uri: finalRedirectUri
         }),
         signal: controller.signal
       })
@@ -84,6 +93,27 @@ export async function POST(request: NextRequest) {
           )
         }
 
+        // Check for redirect URI mismatch
+        if (parsedError.error_description && parsedError.error_description.includes('redirect_uri')) {
+          return NextResponse.json(
+            { 
+              error: 'Redirect URI mismatch',
+              details: `The redirect URI ${finalRedirectUri} is not registered in your Dropbox app.`,
+              errorType: 'redirect_uri_mismatch',
+              userMessage: `Redirect URI probleem. Voeg ${finalRedirectUri} toe aan je Dropbox App Console onder "Redirect URIs".`,
+              shouldRetry: false,
+              configurationHelp: {
+                step1: 'Ga naar https://www.dropbox.com/developers/apps',
+                step2: 'Selecteer je app',
+                step3: 'Ga naar Settings tab',
+                step4: `Voeg deze URI toe onder "Redirect URIs": ${finalRedirectUri}`,
+                step5: 'Sla op en probeer opnieuw te verbinden'
+              }
+            },
+            { status: 400 }
+          )
+        }
+
         // Generic error handling
         return NextResponse.json(
           { 
@@ -99,6 +129,8 @@ export async function POST(request: NextRequest) {
       }
 
       const tokenData = await tokenResponse.json()
+
+      console.log('✅ Token exchange successful')
 
       return NextResponse.json({
         success: true,

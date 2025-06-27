@@ -61,8 +61,16 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
       solution: 'Controleer je App Key in de Dropbox App Console'
     },
     {
+      id: 'redirect-uri-check',
+      name: '3. Redirect URI Configuratie',
+      status: 'pending',
+      message: 'Controleren van redirect URI configuratie...',
+      details: 'Verificatie dat redirect URI correct is ingesteld',
+      solution: 'Update redirect URI in Dropbox App Console'
+    },
+    {
       id: 'oauth-url-generation',
-      name: '3. OAuth URL Generatie',
+      name: '4. OAuth URL Generatie',
       status: 'pending',
       message: 'Genereren van Dropbox OAuth autorisatie URL...',
       details: 'Maken van de juiste OAuth URL met redirect URI',
@@ -70,7 +78,7 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
     },
     {
       id: 'popup-test',
-      name: '4. Popup Window Test',
+      name: '5. Popup Window Test',
       status: 'pending',
       message: 'Testen van popup window functionaliteit...',
       details: 'Controleren of browser popups toestaat',
@@ -78,7 +86,7 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
     },
     {
       id: 'token-exchange',
-      name: '5. Token Exchange Test',
+      name: '6. Token Exchange Test',
       status: 'pending',
       message: 'Testen van OAuth token uitwisseling...',
       details: 'Simuleren van token exchange proces',
@@ -86,7 +94,7 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
     },
     {
       id: 'api-permissions',
-      name: '6. API Permissions Check',
+      name: '7. API Permissions Check',
       status: 'pending',
       message: 'Controleren van Dropbox API permissions...',
       details: 'Verificatie van files.metadata.read en files.content.read permissions',
@@ -94,7 +102,7 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
     },
     {
       id: 'file-access-test',
-      name: '7. File Access Test',
+      name: '8. File Access Test',
       status: 'pending',
       message: 'Testen van bestandstoegang...',
       details: 'Controleren of app bestanden kan lezen uit Dropbox',
@@ -113,6 +121,16 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
     }
   }, [])
 
+  // Get the correct redirect URI based on environment
+  const getRedirectUri = (): string => {
+    if (typeof window !== 'undefined') {
+      // Use current origin for redirect URI
+      return `${window.location.origin}/dropbox-callback`
+    }
+    // Fallback for SSR
+    return `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/dropbox-callback`
+  }
+
   // Run comprehensive diagnostics
   const runDiagnostics = async () => {
     setIsRunningDiagnostics(true)
@@ -124,7 +142,6 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
     await updateDiagnosticStep('env-check', 'running', 'Controleren van environment variables...')
     
     const clientId = process.env.NEXT_PUBLIC_DROPBOX_APP_KEY
-    const hasAppSecret = !!process.env.DROPBOX_APP_SECRET // We can't access this directly in frontend
     
     if (!clientId) {
       await updateDiagnosticStep('env-check', 'error', 
@@ -157,16 +174,31 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
       '✅ App Key format is geldig'
     )
 
-    // Step 3: OAuth URL Generation
+    // Step 3: Redirect URI Check
+    await updateDiagnosticStep('redirect-uri-check', 'running', 'Controleren van redirect URI...')
+    
+    const redirectUri = getRedirectUri()
+    const expectedUris = [
+      `${window.location.origin}/dropbox-callback`,
+      'http://localhost:3000/dropbox-callback',
+      'https://your-domain.netlify.app/dropbox-callback'
+    ]
+    
+    await updateDiagnosticStep('redirect-uri-check', 'warning',
+      `⚠️ Huidige redirect URI: ${redirectUri}`,
+      `Zorg dat deze URI is toegevoegd in je Dropbox App Console.\n\nVerwachte URIs:\n${expectedUris.join('\n')}`,
+      'Ga naar Dropbox App Console → Settings → Redirect URIs en voeg de juiste URI toe'
+    )
+
+    // Step 4: OAuth URL Generation
     await updateDiagnosticStep('oauth-url-generation', 'running', 'Genereren van OAuth URL...')
     
     try {
-      const redirectUri = `${window.location.origin}/dropbox-callback`
       const authUrl = `https://www.dropbox.com/oauth2/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=files.metadata.read files.content.read`
       
       await updateDiagnosticStep('oauth-url-generation', 'success',
         '✅ OAuth URL succesvol gegenereerd',
-        `Redirect URI: ${redirectUri}\nScopes: files.metadata.read, files.content.read`
+        `Redirect URI: ${redirectUri}\nScopes: files.metadata.read, files.content.read\n\nOAuth URL: ${authUrl}`
       )
     } catch (error) {
       await updateDiagnosticStep('oauth-url-generation', 'error',
@@ -178,11 +210,10 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
       return
     }
 
-    // Step 4: Popup Test
+    // Step 5: Popup Test
     await updateDiagnosticStep('popup-test', 'running', 'Testen van popup functionaliteit...')
     
     try {
-      // Test if we can open a popup
       const testPopup = window.open('about:blank', 'test-popup', 'width=100,height=100')
       
       if (testPopup) {
@@ -205,18 +236,19 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
       )
     }
 
-    // Step 5: Token Exchange Test (simulate)
+    // Step 6: Token Exchange Test (simulate)
     await updateDiagnosticStep('token-exchange', 'running', 'Testen van token exchange endpoint...')
     
     try {
-      // Test if our token exchange endpoint is reachable
       const testResponse = await fetch('/api/dropbox/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: 'test-code-for-validation' })
+        body: JSON.stringify({ 
+          code: 'test-code-for-validation',
+          redirectUri: redirectUri
+        })
       })
       
-      // We expect this to fail, but we want to see the error type
       const testData = await testResponse.json()
       
       if (testData.error && testData.error.includes('credentials not configured')) {
@@ -238,7 +270,7 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
       )
     }
 
-    // Step 6: API Permissions Check (if we have a token)
+    // Step 7: API Permissions Check (if we have a token)
     if (accessToken) {
       await updateDiagnosticStep('api-permissions', 'running', 'Controleren van API permissions...')
       
@@ -271,7 +303,7 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
         )
       }
 
-      // Step 7: File Access Test
+      // Step 8: File Access Test
       await updateDiagnosticStep('file-access-test', 'running', 'Testen van bestandstoegang...')
       
       try {
@@ -356,7 +388,7 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
     setConfigurationError(null)
     setIsAutoRetrying(false)
 
-    // Dropbox OAuth URL
+    // Dropbox OAuth URL with correct redirect URI
     const clientId = process.env.NEXT_PUBLIC_DROPBOX_APP_KEY
     if (!clientId) {
       setError('Dropbox App Key niet geconfigureerd. Voeg NEXT_PUBLIC_DROPBOX_APP_KEY toe aan environment variables.')
@@ -364,8 +396,11 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
       return
     }
 
-    const redirectUri = `${window.location.origin}/dropbox-callback`
+    const redirectUri = getRedirectUri()
     const authUrl = `https://www.dropbox.com/oauth2/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=files.metadata.read files.content.read`
+
+    console.log('🔗 Dropbox OAuth URL:', authUrl)
+    console.log('📍 Redirect URI:', redirectUri)
 
     // Open popup for OAuth with better window settings
     const popup = window.open(
@@ -409,6 +444,15 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
             }, retryDelay)
             return
           }
+        } else if (event.data.errorType === 'invalid_credentials') {
+          setError('❌ Dropbox app configuratie fout: ' + errorMessage)
+          setConfigurationError({
+            step1: 'Ga naar https://www.dropbox.com/developers/apps',
+            step2: 'Selecteer je app',
+            step3: 'Controleer App Key en App Secret',
+            step4: `Voeg deze redirect URI toe: ${redirectUri}`,
+            step5: 'Zorg dat "Full Dropbox" toegang is geselecteerd'
+          })
         } else {
           setError('Dropbox autorisatie mislukt: ' + errorMessage)
         }
@@ -732,12 +776,13 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
             <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-left">
               <h5 className="font-semibold text-yellow-800 mb-2">🔧 Dropbox App Configuratie Vereist</h5>
               <p className="text-sm text-yellow-700 mb-3">
-                Je Dropbox app moet correct geconfigureerd worden voor volledige toegang:
+                Je Dropbox app moet correct geconfigureerd worden:
               </p>
               <ol className="text-sm text-yellow-700 space-y-1 list-decimal list-inside">
                 <li>Ga naar <a href="https://www.dropbox.com/developers/apps" target="_blank" rel="noopener noreferrer" className="underline">Dropbox App Console</a></li>
                 <li>Selecteer je app</li>
                 <li>Zorg dat <strong>"Full Dropbox"</strong> toegang is geselecteerd (niet "App folder")</li>
+                <li>Voeg deze redirect URI toe: <code className="bg-yellow-100 px-1 rounded">{getRedirectUri()}</code></li>
                 <li>Controleer dat deze permissions zijn ingeschakeld:
                   <ul className="ml-4 mt-1 space-y-1">
                     <li>• files.metadata.read</li>
@@ -781,7 +826,7 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
                         <p className="text-sm text-gray-600 mt-1">{step.message}</p>
                         
                         {step.details && (
-                          <div className="mt-2 p-2 bg-gray-100 rounded text-xs text-gray-700">
+                          <div className="mt-2 p-2 bg-gray-100 rounded text-xs text-gray-700 whitespace-pre-line">
                             <strong>Details:</strong> {step.details}
                           </div>
                         )}
@@ -909,7 +954,7 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
                         <p className="text-sm text-gray-600 mt-1">{step.message}</p>
                         
                         {step.details && (
-                          <div className="mt-2 p-2 bg-gray-100 rounded text-xs text-gray-700">
+                          <div className="mt-2 p-2 bg-gray-100 rounded text-xs text-gray-700 whitespace-pre-line">
                             <strong>Details:</strong> {step.details}
                           </div>
                         )}
