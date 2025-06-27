@@ -48,12 +48,12 @@ export default function DropboxCallback() {
       }
 
       try {
-        // Immediately attempt token exchange without delay to prevent code expiration
-        console.log('🔄 Starting token exchange immediately...')
+        // Immediately attempt token exchange with reduced timeout
+        console.log('🔄 Starting immediate token exchange...')
         
-        // Exchange code for access token with timeout
+        // Reduced timeout to 5 seconds for faster failure detection
         const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), 8000) // 8 second timeout
+        const timeoutId = setTimeout(() => controller.abort(), 5000)
         
         const response = await fetch('/api/dropbox/auth', {
           method: 'POST',
@@ -64,7 +64,10 @@ export default function DropboxCallback() {
             code: code,
             redirectUri: window.location.origin + '/dropbox-callback'
           }),
-          signal: controller.signal
+          signal: controller.signal,
+          // Add performance optimizations
+          keepalive: true,
+          priority: 'high' as RequestPriority
         })
 
         clearTimeout(timeoutId)
@@ -74,7 +77,7 @@ export default function DropboxCallback() {
           setStatus('success')
           setMessage('Dropbox verbinding succesvol!')
           
-          // Send success to parent window
+          // Send success to parent window immediately
           if (window.opener) {
             window.opener.postMessage({
               type: 'DROPBOX_AUTH_SUCCESS',
@@ -82,15 +85,15 @@ export default function DropboxCallback() {
             }, window.location.origin)
           }
 
-          // Auto-close after success
+          // Reduced auto-close delay for faster UX
           setTimeout(() => {
             window.close()
-          }, 1500)
+          }, 1000)
         } else {
           // Handle specific error types from the API
           const errorMessage = data.userMessage || data.error || 'Authentication failed'
           const retryable = data.shouldRetry !== false
-          const delay = data.retryDelay || 1000 // Reduced default delay
+          const delay = data.fastRetry ? 0 : (data.retryDelay || 500) // Use fast retry if available
           
           setStatus('error')
           setMessage(errorMessage)
@@ -104,23 +107,25 @@ export default function DropboxCallback() {
               userMessage: errorMessage,
               errorType: data.errorType,
               shouldRetry: retryable,
-              retryDelay: delay
+              retryDelay: delay,
+              fastRetry: data.fastRetry
             }, window.location.origin)
           }
 
-          // For expired code errors, show immediate retry option
-          if (data.errorType === 'expired_code' && retryable) {
-            setMessage(`${errorMessage} Klik op "Probeer Opnieuw" voor een nieuwe autorisatie.`)
+          // For expired code errors with fast retry, show immediate retry option
+          if (data.errorType === 'expired_code' && data.fastRetry) {
+            setMessage(`${errorMessage} Klik direct op "Probeer Opnieuw" voor een nieuwe autorisatie.`)
           }
         }
       } catch (error) {
         console.error('Dropbox callback error:', error)
         
         if (error instanceof Error && error.name === 'AbortError') {
-          const errorMessage = 'Token exchange time-out. Probeer opnieuw met een snellere internetverbinding.'
+          const errorMessage = 'Token exchange time-out. Probeer direct opnieuw.'
           setStatus('error')
           setMessage(errorMessage)
           setShouldRetry(true)
+          setRetryDelay(0) // Immediate retry for timeout
           
           if (window.opener) {
             window.opener.postMessage({
@@ -128,7 +133,8 @@ export default function DropboxCallback() {
               error: 'Token exchange timeout',
               userMessage: errorMessage,
               shouldRetry: true,
-              retryDelay: 1000
+              retryDelay: 0,
+              fastRetry: true
             }, window.location.origin)
           }
         } else {
@@ -137,13 +143,15 @@ export default function DropboxCallback() {
           setStatus('error')
           setMessage(errorMessage)
           setShouldRetry(true)
+          setRetryDelay(500)
           
           if (window.opener) {
             window.opener.postMessage({
               type: 'DROPBOX_AUTH_ERROR',
               error: error instanceof Error ? error.message : 'Unknown error',
               userMessage: errorMessage,
-              shouldRetry: true
+              shouldRetry: true,
+              retryDelay: 500
             }, window.location.origin)
           }
         }
@@ -164,10 +172,10 @@ export default function DropboxCallback() {
       }, window.location.origin)
     }
     
-    // Small delay before closing to ensure message is sent
+    // Reduced delay for faster retry
     setTimeout(() => {
       window.close()
-    }, 300)
+    }, 200)
   }
 
   return (
@@ -184,7 +192,7 @@ export default function DropboxCallback() {
                 Bezig met het verwerken van je Dropbox autorisatie...
               </p>
               <p className="text-sm text-gray-500 mt-2">
-                Token wordt uitgewisseld...
+                Token wordt direct uitgewisseld...
               </p>
             </>
           )}
@@ -228,7 +236,8 @@ export default function DropboxCallback() {
                     disabled={isRetrying}
                     className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
                   >
-                    {isRetrying ? 'Bezig met opnieuw proberen...' : 'Probeer Opnieuw'}
+                    {isRetrying ? 'Bezig met opnieuw proberen...' : 
+                     retryDelay === 0 ? 'Direct Opnieuw Proberen' : 'Probeer Opnieuw'}
                   </button>
                 )}
                 <button
@@ -242,7 +251,7 @@ export default function DropboxCallback() {
               {message.includes('verlopen') && (
                 <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                   <p className="text-xs text-yellow-700">
-                    💡 <strong>Tip:</strong> Autorisatie codes verlopen snel. Klik direct op "Toestaan" in Dropbox en wacht tot dit venster de verbinding bevestigt.
+                    💡 <strong>Snelle Tip:</strong> Autorisatie codes verlopen binnen 10 minuten. Klik direct op "Toestaan" in Dropbox en wacht tot dit venster de verbinding bevestigt.
                   </p>
                 </div>
               )}
@@ -250,7 +259,7 @@ export default function DropboxCallback() {
               {message.includes('time-out') && (
                 <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                   <p className="text-xs text-blue-700">
-                    💡 <strong>Tip:</strong> Controleer je internetverbinding en probeer opnieuw. Een stabiele verbinding is vereist voor de token uitwisseling.
+                    💡 <strong>Snelle Tip:</strong> Probeer direct opnieuw - de verbinding wordt nu sneller verwerkt.
                   </p>
                 </div>
               )}

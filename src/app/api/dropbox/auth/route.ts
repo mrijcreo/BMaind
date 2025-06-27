@@ -31,16 +31,18 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString()
     })
 
-    // Increased timeout to prevent code expiration
+    // Reduced timeout to 6 seconds for faster failure detection
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 9000) // 9 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 6000)
 
     try {
-      // Exchange code for access token immediately
+      // Exchange code for access token immediately with optimized fetch options
       const tokenResponse = await fetch('https://api.dropboxapi.com/oauth2/token', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
+          'User-Agent': 'CanvasCoach/1.0',
+          'Accept': 'application/json',
         },
         body: new URLSearchParams({
           code: code,
@@ -49,7 +51,10 @@ export async function POST(request: NextRequest) {
           client_secret: clientSecret,
           redirect_uri: finalRedirectUri
         }),
-        signal: controller.signal
+        signal: controller.signal,
+        // Add keepalive and priority for better performance
+        keepalive: true,
+        priority: 'high' as RequestPriority
       })
 
       clearTimeout(timeoutId)
@@ -66,17 +71,18 @@ export async function POST(request: NextRequest) {
           parsedError = { error: 'unknown', error_description: errorText }
         }
 
-        // Handle specific error cases
+        // Handle specific error cases with improved messaging
         if (parsedError.error === 'invalid_grant') {
-          console.log('🔄 Authorization code expired or invalid - this is common with slow connections')
+          console.log('🔄 Authorization code expired or invalid - implementing faster retry strategy')
           return NextResponse.json(
             { 
               error: 'Authorization code expired or invalid',
-              details: 'De autorisatie code is verlopen of al gebruikt. Dit gebeurt vaak bij langzame verbindingen of als het proces te lang duurt.',
+              details: 'De autorisatie code is verlopen of al gebruikt. Dit gebeurt vaak bij langzame verbindingen.',
               errorType: 'expired_code',
-              userMessage: 'Autorisatie code verlopen. Start het verbindingsproces opnieuw en klik direct op "Toestaan" in Dropbox.',
+              userMessage: 'Autorisatie code verlopen. Probeer opnieuw en klik direct op "Toestaan".',
               shouldRetry: true,
-              retryDelay: 1000 // Reduced retry delay
+              retryDelay: 500, // Reduced retry delay for faster recovery
+              fastRetry: true // Flag for immediate retry without delay
             },
             { status: 400 }
           )
@@ -102,7 +108,7 @@ export async function POST(request: NextRequest) {
               error: 'Redirect URI mismatch',
               details: `The redirect URI ${finalRedirectUri} is not registered in your Dropbox app.`,
               errorType: 'redirect_uri_mismatch',
-              userMessage: `Redirect URI probleem. Voeg ${finalRedirectUri} toe aan je Dropbox App Console onder "Redirect URIs".`,
+              userMessage: `Redirect URI probleem. Voeg ${finalRedirectUri} toe aan je Dropbox App Console.`,
               shouldRetry: false,
               configurationHelp: {
                 step1: 'Ga naar https://www.dropbox.com/developers/apps',
@@ -116,7 +122,7 @@ export async function POST(request: NextRequest) {
           )
         }
 
-        // Generic error handling
+        // Generic error handling with faster retry
         return NextResponse.json(
           { 
             error: 'Token exchange failed',
@@ -124,7 +130,8 @@ export async function POST(request: NextRequest) {
             errorType: 'token_exchange_failed',
             userMessage: 'Fout bij Dropbox autorisatie. Probeer het opnieuw.',
             shouldRetry: true,
-            retryDelay: 1000
+            retryDelay: 500,
+            fastRetry: true
           },
           { status: tokenResponse.status }
         )
@@ -149,15 +156,16 @@ export async function POST(request: NextRequest) {
       clearTimeout(timeoutId)
       
       if (fetchError instanceof Error && fetchError.name === 'AbortError') {
-        console.log('⏰ Token exchange timeout - code likely expired')
+        console.log('⏰ Token exchange timeout - implementing fast retry')
         return NextResponse.json(
           { 
             error: 'Request timeout',
-            details: 'The token exchange request timed out, likely due to network issues or code expiration',
+            details: 'The token exchange request timed out',
             errorType: 'timeout',
-            userMessage: 'Verbinding time-out. Controleer je internetverbinding en probeer opnieuw.',
+            userMessage: 'Verbinding time-out. Probeer direct opnieuw.',
             shouldRetry: true,
-            retryDelay: 1000
+            retryDelay: 500,
+            fastRetry: true
           },
           { status: 408 }
         )
@@ -176,9 +184,9 @@ export async function POST(request: NextRequest) {
         error: 'Failed to authenticate with Dropbox',
         details: errorMessage,
         errorType: 'server_error',
-        userMessage: 'Server fout bij Dropbox autorisatie. Probeer het later opnieuw.',
+        userMessage: 'Server fout bij Dropbox autorisatie. Probeer opnieuw.',
         shouldRetry: true,
-        retryDelay: 2000,
+        retryDelay: 1000,
         timestamp: new Date().toISOString()
       },
       { status: 500 }
