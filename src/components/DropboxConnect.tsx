@@ -378,10 +378,10 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
     ))
     
     // Add small delay for visual effect
-    await new Promise(resolve => setTimeout(resolve, 500))
+    await new Promise(resolve => setTimeout(resolve, 300))
   }
 
-  // Dropbox OAuth flow with improved error handling
+  // Dropbox OAuth flow with improved error handling and faster processing
   const connectToDropbox = () => {
     setIsConnecting(true)
     setError('')
@@ -399,14 +399,17 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
     const redirectUri = getRedirectUri()
     const authUrl = `https://www.dropbox.com/oauth2/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=files.metadata.read files.content.read`
 
-    console.log('🔗 Dropbox OAuth URL:', authUrl)
-    console.log('📍 Redirect URI:', redirectUri)
+    console.log('🔗 Starting Dropbox OAuth flow:', {
+      redirectUri,
+      timestamp: new Date().toISOString(),
+      attempt: retryCount + 1
+    })
 
-    // Open popup for OAuth with better window settings
+    // Open popup for OAuth with optimized settings for faster loading
     const popup = window.open(
       authUrl,
       'dropbox-auth',
-      'width=600,height=700,scrollbars=yes,resizable=yes,location=yes,status=yes'
+      'width=600,height=700,scrollbars=yes,resizable=yes,location=yes,status=yes,toolbar=no,menubar=no'
     )
 
     if (!popup) {
@@ -415,9 +418,11 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
       return
     }
 
-    // Listen for popup messages
+    // Listen for popup messages with improved handling
     const messageListener = (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return
+
+      console.log('📨 Received message from popup:', event.data.type)
 
       if (event.data.type === 'DROPBOX_AUTH_SUCCESS') {
         const { accessToken } = event.data
@@ -427,23 +432,19 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
         setRetryCount(0) // Reset retry count on success
       } else if (event.data.type === 'DROPBOX_AUTH_ERROR') {
         const errorMessage = event.data.userMessage || event.data.error || 'Onbekende fout'
-        const retryDelay = event.data.retryDelay || 2000
+        
+        console.log('❌ Auth error received:', {
+          errorType: event.data.errorType,
+          shouldRetry: event.data.shouldRetry,
+          attempt: retryCount + 1
+        })
         
         // Handle specific error types
         if (event.data.errorType === 'expired_code') {
-          setError(`⚠️ Autorisatie code verlopen (poging ${retryCount + 1}). Dit gebeurt als het proces te lang duurt. ${retryCount < 2 ? 'Automatisch opnieuw proberen...' : 'Probeer handmatig opnieuw.'}`)
+          setError(`⚠️ Autorisatie code verlopen (poging ${retryCount + 1}). ${retryCount < 2 ? 'Probeer opnieuw - klik direct op "Toestaan" in Dropbox.' : 'Te veel pogingen. Wacht even en probeer opnieuw.'}`)
           
-          // Auto-retry up to 3 times for expired codes
-          if (retryCount < 2) {
-            setIsAutoRetrying(true)
-            setTimeout(() => {
-              setRetryCount(prev => prev + 1)
-              popup?.close()
-              window.removeEventListener('message', messageListener)
-              connectToDropbox() // Retry automatically
-            }, retryDelay)
-            return
-          }
+          // Don't auto-retry for expired codes - let user manually retry
+          setRetryCount(prev => prev + 1)
         } else if (event.data.errorType === 'invalid_credentials') {
           setError('❌ Dropbox app configuratie fout: ' + errorMessage)
           setConfigurationError({
@@ -453,6 +454,8 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
             step4: `Voeg deze redirect URI toe: ${redirectUri}`,
             step5: 'Zorg dat "Full Dropbox" toegang is geselecteerd'
           })
+        } else if (event.data.errorType === 'timeout') {
+          setError('⏰ Verbinding time-out. Controleer je internetverbinding en probeer opnieuw.')
         } else {
           setError('Dropbox autorisatie mislukt: ' + errorMessage)
         }
@@ -463,13 +466,14 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
         window.removeEventListener('message', messageListener)
       } else if (event.data.type === 'DROPBOX_AUTH_RETRY') {
         // User clicked retry in the callback window
+        console.log('🔄 User requested retry from callback window')
         popup?.close()
         window.removeEventListener('message', messageListener)
         // Automatically retry the connection with a small delay
         setTimeout(() => {
           setRetryCount(prev => prev + 1)
           connectToDropbox()
-        }, 1000)
+        }, 500)
       }
     }
 
@@ -485,8 +489,8 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
           setIsAutoRetrying(false)
           window.removeEventListener('message', messageListener)
           
-          // Only show error if not auto-retrying
-          if (!isAutoRetrying && retryCount === 0) {
+          // Only show error if not auto-retrying and no previous errors
+          if (!isAutoRetrying && retryCount === 0 && !error) {
             setError('Verbinding geannuleerd. Popup venster werd gesloten voordat de autorisatie voltooid was.')
           }
         }
@@ -501,21 +505,23 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
 
     checkClosedInterval = setInterval(checkClosed, 1000)
 
-    // Add timeout for the entire process
+    // Reduced timeout for the entire process to prevent code expiration
     setTimeout(() => {
       if (popup && !popup.closed) {
+        console.log('⏰ OAuth process timeout - closing popup')
         popup.close()
         clearInterval(checkClosedInterval)
         setIsConnecting(false)
         setIsAutoRetrying(false)
         window.removeEventListener('message', messageListener)
-        setError('Verbinding time-out. Het autorisatieproces duurde te lang. Probeer opnieuw.')
+        setError('Verbinding time-out. Het autorisatieproces duurde te lang. Probeer opnieuw en klik sneller op "Toestaan".')
       }
-    }, 120000) // 2 minute timeout
+    }, 90000) // Reduced to 90 seconds
   }
 
   const handleAuthSuccess = async (token: string) => {
     try {
+      console.log('✅ Handling auth success')
       setAccessToken(token)
       localStorage.setItem('dropbox_access_token', token)
       setIsConnected(true)
@@ -737,6 +743,7 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
             >
               {isAutoRetrying ? '🔄 Automatisch opnieuw proberen...' : 
                isConnecting ? '🔄 Verbinden...' : 
+               retryCount > 0 ? `🔗 Probeer Opnieuw (${retryCount + 1})` :
                '🔗 Verbind met Dropbox'}
             </button>
             
@@ -758,14 +765,24 @@ export default function DropboxConnect({ onFilesLoaded, onConnectionChange }: Dr
                 : 'bg-red-50 border border-red-200 text-red-700'
             }`}>
               <p className="text-sm">{error}</p>
-              {error.includes('verlopen') && retryCount > 0 && (
-                <p className="text-xs mt-2 opacity-75">
-                  💡 Tip: Probeer de verbinding sneller te voltooien. Klik direct op "Toestaan" in het Dropbox venster.
-                </p>
+              {error.includes('verlopen') && (
+                <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700">
+                  💡 <strong>Tip:</strong> Autorisatie codes verlopen snel (binnen 10 minuten). Voor de beste resultaten:
+                  <ul className="mt-1 ml-4 list-disc">
+                    <li>Klik direct op "Toestaan" wanneer Dropbox om toestemming vraagt</li>
+                    <li>Zorg voor een stabiele internetverbinding</li>
+                    <li>Sluit geen vensters tot de verbinding bevestigd is</li>
+                  </ul>
+                </div>
               )}
               {error.includes('popup') && (
                 <p className="text-xs mt-2 opacity-75">
                   💡 Tip: Controleer je browser instellingen en sta popups toe voor deze website.
+                </p>
+              )}
+              {error.includes('time-out') && (
+                <p className="text-xs mt-2 opacity-75">
+                  💡 Tip: Controleer je internetverbinding. Een stabiele verbinding is vereist voor Dropbox autorisatie.
                 </p>
               )}
             </div>
